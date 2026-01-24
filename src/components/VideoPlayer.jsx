@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
 import { AlertTriangle } from 'lucide-react';
+import { API_URL } from '../services/api';
 
 const VideoPlayer = ({ url, poster, className, autoPlay = true }) => {
     const videoRef = useRef(null);
@@ -10,8 +11,16 @@ const VideoPlayer = ({ url, poster, className, autoPlay = true }) => {
     const [isProxy, setIsProxy] = React.useState(false);
 
     useEffect(() => {
-        setCurrentUrl(url);
-        setIsProxy(false);
+        // Preemptive Proxying: If the page is HTTPS and the stream is HTTP,
+        // it WILL fail due to Mixed Content. Use proxy immediately.
+        if (window.location.protocol === 'https:' && url.startsWith('http://')) {
+            console.log("Preemptive Proxying for HTTP stream...");
+            setCurrentUrl(`${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`);
+            setIsProxy(true);
+        } else {
+            setCurrentUrl(url);
+            setIsProxy(false);
+        }
     }, [url]);
 
     useEffect(() => {
@@ -51,46 +60,10 @@ const VideoPlayer = ({ url, poster, className, autoPlay = true }) => {
                     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                         // Check if we can fallback to proxy
                         if (!isProxy) {
-                            console.log("Network Error details:", data.details);
-                            // Common CORS/Mixed content errors or 403s on direct stream
                             console.warn("Direct stream failed. Attempting Proxy Fallback...");
-
-                            // Construct Proxy URL
-                            // We need to know the backend URL.
-                            // Assuming standard relative path /api exists if served together or env var.
-                            // But we are in React. Let's try relative /api/stream/proxy first
-                            // Note: 'Home.jsx' handles secure channel replacement, but that might fail if server is HTTP only.
-                            // Proxy handles strict HTTP.
-
-                            // We go back to original URL (prop) to avoid double proxying if currentUrl was modified
-                            const originalStreamUrl = url.replace('https://', 'http://'); // Revert forced https from Home.jsx if needed, or just use raw
-                            // Actually better to use the raw `url` prop but ensure we treat it as the target.
-
-                            const proxyUrl = `${window.location.origin}/api/stream/proxy?url=${encodeURIComponent(url)}`;
-                            // Or if using specific API_URL env:
-                            // const API_URL = import.meta.env.VITE_API_URL || '';
-                            // const proxyUrl = `${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`;
-
-                            // Since we don't have easy access to env here nicely without import, 
-                            // and we assume proxy is on same origin as other API calls.
-                            // Let's use a hardcoded fallback or relative path.
-                            // Using the one from `api.js` would be ideal but that's an axios instance.
-
-                            // Let's rely on the fact that if we are failing networking, the proxy might save us.
-                            // Use a known good relative path if deployed together, or full path.
-                            // For dev: "http://localhost:8000/api/stream/proxy"
-                            // For prod: "/api/stream/proxy"
-
-                            let backendUrl = '/api';
-                            // Quick hack to detect dev mode default port
-                            if (window.location.port === '5173') {
-                                backendUrl = 'http://localhost:8000/api';
-                            }
-
-                            const fallbackUrl = `${backendUrl}/stream/proxy?url=${encodeURIComponent(url)}`;
-
+                            const proxyUrl = `${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`;
                             setIsProxy(true);
-                            setCurrentUrl(fallbackUrl);
+                            setCurrentUrl(proxyUrl);
                             return;
                         }
                         hls.startLoad();
@@ -110,9 +83,7 @@ const VideoPlayer = ({ url, poster, className, autoPlay = true }) => {
             const onError = (e) => {
                 if (!isProxy) {
                     console.warn("Native Player Error. Attempting Proxy...");
-                    let backendUrl = '/api';
-                    if (window.location.port === '5173') backendUrl = 'http://localhost:8000/api';
-                    const fallbackUrl = `${backendUrl}/stream/proxy?url=${encodeURIComponent(url)}`;
+                    const fallbackUrl = `${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`;
                     setIsProxy(true);
                     setCurrentUrl(fallbackUrl);
                 }

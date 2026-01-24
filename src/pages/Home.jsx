@@ -84,12 +84,7 @@ const Home = () => {
     }, [activeGroup, channels, groups, searchQuery, activeCountry]);
 
     const handleChannelClick = (channel) => {
-        // Ensure HTTPS to prevent Mixed Content errors on Vercel/Render
-        const secureChannel = {
-            ...channel,
-            stream_url: channel.stream_url.replace('http://', 'https://')
-        };
-        setSelectedChannel(secureChannel);
+        setSelectedChannel(channel);
     };
 
     const handleLogout = () => {
