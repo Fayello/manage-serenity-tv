@@ -29,7 +29,7 @@ const Activation = ({ onActivate }) => {
                     <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500">
                         <Tv size={40} />
                     </div>
-                    <h1 className="text-3xl font-bold mb-2">Serenity Tv Player</h1>
+                    <h1 className="text-3xl font-bold mb-2">Serenity TV</h1>
                     <p className="text-slate-400">Please activate your device to continue.</p>
                 </div>
 
