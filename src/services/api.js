@@ -112,7 +112,7 @@ export const deviceService = {
 
 export const channelService = {
     getChannels: async (page = 1) => {
-        return await api.get(`/channels/?page=${page}`);
+        return await api.get(`/channels/?page=${page}&page_size=200`);
     }
 };
 
