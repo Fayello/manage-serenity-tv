@@ -19,8 +19,7 @@ import {
     Settings
 } from 'lucide-react';
 import clsx from 'clsx';
-import AdminUsers from './AdminUsers';
-import LicenseManager from './LicenseManager';
+import ActivationModal from '../../components/ActivationModal';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -36,6 +35,10 @@ const AdminDashboard = () => {
     });
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+
+    // Modal State
+    const [modalOpen, setModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null); // { type: 'PAYMENT'|'CODE', id?: string }
 
     useEffect(() => {
         if (activeTab === 'settings') return; // No generic data fetch for settings
@@ -81,19 +84,36 @@ const AdminDashboard = () => {
         setRefreshing(false);
     };
 
-    const handleConfirmPayment = async (id, planType) => {
-        const defaultDuration = planType === '1_YEAR' ? 365 : 1095;
-        const duration = prompt(`Confirm payment and generate code?\nEnter custom duration in DAYS (default ${defaultDuration}):`, defaultDuration);
-        if (duration === null) return;
+    // --- Modal Handlers ---
 
+    const handleConfirmPayment = (id, planType) => {
+        setPendingAction({ type: 'PAYMENT', id });
+        setModalOpen(true);
+    };
+
+    const handleGenerateCode = () => {
+        setPendingAction({ type: 'CODE' });
+        setModalOpen(true);
+    };
+
+    const handleModalConfirm = async (duration) => {
+        setModalOpen(false);
         try {
-            const response = await api.post(`/admin/payments/${id}/confirm/`, { duration: parseInt(duration) });
-            alert(`Generated Code: ${response.data.generated_code}`);
+            if (pendingAction.type === 'PAYMENT') {
+                const response = await api.post(`/admin/payments/${pendingAction.id}/confirm/`, { duration: parseInt(duration) });
+                alert(`Generated Code: ${response.data.generated_code}`);
+            } else if (pendingAction.type === 'CODE') {
+                const response = await api.post('/admin/codes/generate/', { duration: parseInt(duration) });
+                alert(`Generated Code: ${response.data.code}`);
+            }
             handleRefresh();
         } catch (error) {
-            alert("Error confirming payment");
+            alert("Action failed: " + (error.response?.data?.error || error.message));
         }
+        setPendingAction(null);
     };
+
+    // --- Other Actions ---
 
     const handleRevokeLicense = async (id) => {
         const reason = prompt("Enter revocation reason:");
@@ -104,18 +124,6 @@ const AdminDashboard = () => {
             handleRefresh();
         } catch (error) {
             alert("Error revoking license");
-        }
-    };
-
-    const handleGenerateCode = async () => {
-        const duration = prompt("Enter duration in days (default 365):", "365");
-        if (!duration) return;
-        try {
-            const response = await api.post('/admin/codes/generate/', { duration: parseInt(duration) });
-            alert(`Generated Code: ${response.data.code}`);
-            handleRefresh();
-        } catch (error) {
-            alert("Error generating code");
         }
     };
 
@@ -181,6 +189,13 @@ const AdminDashboard = () => {
             {/* Mesh Gradients */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 blur-[120px] rounded-full" />
+
+            <ActivationModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                onConfirm={handleModalConfirm}
+                title={pendingAction?.type === 'PAYMENT' ? 'Confirm Subscription' : 'Generate Master Code'}
+            />
 
             <div className="relative z-10 flex min-h-screen">
                 {/* Sidebar */}
