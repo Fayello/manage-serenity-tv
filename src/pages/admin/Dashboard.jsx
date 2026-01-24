@@ -364,7 +364,7 @@ const AdminDashboard = () => {
                                     )}
                                 </div>
 
-                                <div className="overflow-x-auto min-h-[400px]">
+                                <div className="p-4 md:p-0 min-h-[400px]">
                                     <AnimatePresence mode="wait">
                                         {loading ? (
                                             <div className="flex flex-col items-center justify-center p-20 gap-4">
@@ -544,7 +544,7 @@ const AdminDashboard = () => {
     );
 };
 
-const NavItem = ({ active, onClick, icon: Icon, label, badge }) => (
+const NavItem = ({ active, onClick, icon: Icon, label, badge, onNavItemClick }) => (
     <button
         onClick={() => { onClick(); onNavItemClick?.(); }}
         className={clsx(
