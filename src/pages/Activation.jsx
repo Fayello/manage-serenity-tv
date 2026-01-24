@@ -45,9 +45,8 @@ const Activation = ({ onActivate }) => {
                             type="text"
                             value={activationCode}
                             onChange={(e) => setActivationCode(e.target.value)}
-                            placeholder="Enter code provided by admin"
-                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-center tracking-[0.5em] font-mono uppercase"
-                            maxLength={4}
+                            placeholder="Enter Activation Code"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-center tracking-widest font-mono uppercase"
                         />
                     </div>
 
