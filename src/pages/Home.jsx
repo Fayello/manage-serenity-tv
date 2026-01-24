@@ -36,8 +36,6 @@ const Home = () => {
                         hasNext = false;
                     }
 
-                    // Safety break for huge lists if needed, but for now we mirror mobile app eager load
-                    if (page > 50) hasNext = false;
                 }
 
                 setChannels(allChannels);
