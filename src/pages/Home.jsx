@@ -84,11 +84,12 @@ const Home = () => {
     }, [activeGroup, channels, groups, searchQuery, activeCountry]);
 
     const handleChannelClick = (channel) => {
-        // Ensure we pass the stream URL properly
-        // Backend returns `stream_url` (from model) usually, not `url`. Let's check serializer or map it.
-        // Serializer usually returns model fields. 
-        // Let's assume standard serializer which dumps fields. Model has `stream_url`.
-        setSelectedChannel(channel);
+        // Ensure HTTPS to prevent Mixed Content errors on Vercel/Render
+        const secureChannel = {
+            ...channel,
+            stream_url: channel.stream_url.replace('http://', 'https://')
+        };
+        setSelectedChannel(secureChannel);
     };
 
     const handleLogout = () => {
