@@ -20,6 +20,8 @@ const Home = () => {
     const [hasMore, setHasMore] = useState(true);
     const [isFetchingSub, setIsFetchingSub] = useState(false);
 
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
     useEffect(() => {
         const fetchMetadata = async () => {
             setLoading(true);
@@ -29,12 +31,14 @@ const Home = () => {
                     channelService.getCategories()
                 ]);
                 setCountries(colsRes.data);
-                const categoryList = catsRes.data;
+
+                // RESTORE 'All' category
+                const categoryList = ['All', ...catsRes.data];
                 const groupsMap = {};
                 categoryList.forEach(c => groupsMap[c] = []);
                 setGroups(groupsMap);
 
-                if (categoryList.length > 0) setActiveGroup(categoryList[0]);
+                setActiveGroup('All');
             } catch (error) {
                 console.error("Failed to load metadata", error);
             } finally {
@@ -43,6 +47,14 @@ const Home = () => {
         };
         fetchMetadata();
     }, []);
+
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 500); // 500ms delay
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // Fetch channels when filters or page changes
     useEffect(() => {
@@ -53,7 +65,7 @@ const Home = () => {
                 const params = {};
                 if (activeGroup !== 'All') params.category = activeGroup;
                 if (activeCountry !== 'All') params.country = activeCountry;
-                if (searchQuery) params.search = searchQuery;
+                if (debouncedSearch) params.search = debouncedSearch;
 
                 const response = await channelService.getChannels(page, params);
                 const newChannels = response.data.results || [];
@@ -74,7 +86,7 @@ const Home = () => {
         };
 
         fetchChannels();
-    }, [activeGroup, activeCountry, searchQuery, page]);
+    }, [activeGroup, activeCountry, debouncedSearch, page]);
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {
@@ -97,7 +109,7 @@ const Home = () => {
     useEffect(() => {
         setPage(1);
         if (contentRef.current) contentRef.current.scrollTo(0, 0);
-    }, [activeGroup, activeCountry, searchQuery]);
+    }, [activeGroup, activeCountry, debouncedSearch]);
 
     const filteredChannels = channels; // Now fully offloaded to server
 
