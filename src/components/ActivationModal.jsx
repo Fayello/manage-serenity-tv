@@ -48,16 +48,19 @@ const ActivationModal = ({ isOpen, onClose, onConfirm, title = "Generate Activat
         <AnimatePresence>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-[#0A0A18] border border-white/10 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="bg-[#0A0A18] border border-white/10 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden relative"
                 >
-                    <div className="flex justify-between items-center p-6 border-b border-white/5 bg-white/5">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                            <Clock className="text-blue-500" /> {title}
+                    <div className="flex justify-between items-center p-8 border-b border-white/5 bg-white/[0.02]">
+                        <h3 className="text-xl font-black text-white flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                                <Clock className="text-blue-500" size={20} />
+                            </div>
+                            {title}
                         </h3>
-                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-all">
                             <X size={20} />
                         </button>
                     </div>
@@ -134,15 +137,15 @@ const ActivationModal = ({ isOpen, onClose, onConfirm, title = "Generate Activat
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 py-3 rounded-xl bg-gray-800 text-gray-300 font-bold text-sm hover:bg-gray-700 transition-colors"
+                                className="flex-1 py-4 rounded-xl bg-white/5 text-gray-400 font-bold text-sm hover:bg-white/10 transition-colors border border-white/5"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                className="flex-[2] py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
+                                className="flex-[2] py-4 rounded-xl bg-blue-600 text-white font-black text-sm hover:bg-blue-500 shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
                             >
-                                <CheckCircle2 size={18} /> Confirm Generation
+                                <CheckCircle2 size={18} /> Confirm Activation
                             </button>
                         </div>
 
