@@ -17,7 +17,8 @@ import {
     XCircle,
     AlertCircle,
     Settings,
-    Shield
+    Shield,
+    Download
 } from 'lucide-react';
 import clsx from 'clsx';
 import ActionModal from '../../components/ActionModal';
@@ -377,6 +378,15 @@ const AdminDashboard = () => {
                                 onNavItemClick={() => setIsMenuOpen(false)}
                             />
                         </div>
+                        <a
+                            href="/Serenity_Tv_Player.apk"
+                            download
+                            className="flex items-center gap-3 p-4 mt-2 rounded-xl text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 transition-all duration-300 group"
+                            title="Download rebranded APK for manual distribution"
+                        >
+                            <Download size={20} className="transition-transform group-hover:translate-y-0.5" />
+                            <span className="font-bold text-sm tracking-tight">Download APK</span>
+                        </a>
                     </nav>
 
                     <button
@@ -674,7 +684,7 @@ const AdminDashboard = () => {
                     </div>
                 </main>
             </div>
-        </div>
+        </div >
     );
 };
 
