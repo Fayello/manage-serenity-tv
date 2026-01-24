@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { channelService } from '../services/api';
 import VideoPlayer from '../components/VideoPlayer';
 import { Play, LogOut, Menu, Search, X } from 'lucide-react';
@@ -13,73 +13,93 @@ const Home = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const loaderRef = useRef(null);
+    const contentRef = useRef(null);
+
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isFetchingSub, setIsFetchingSub] = useState(false);
 
     useEffect(() => {
-        const fetchAllChannels = async () => {
+        const fetchMetadata = async () => {
             setLoading(true);
             try {
-                let allChannels = [];
-                let page = 1;
-                let hasNext = true;
+                const [colsRes, catsRes] = await Promise.all([
+                    channelService.getCountries(),
+                    channelService.getCategories()
+                ]);
+                setCountries(colsRes.data);
+                const categoryList = catsRes.data;
+                const groupsMap = {};
+                categoryList.forEach(c => groupsMap[c] = []);
+                setGroups(groupsMap);
 
-                while (hasNext) {
-                    const response = await channelService.getChannels(page);
-                    // Standard Django Rest Framework Pagination: { count: N, next: URL, previous: URL, results: [] }
-                    // OR if custom pagination: check response structure. 
-                    // Based on our code, it's standard PageNumberPagination.
-                    const results = response.data.results || [];
-                    allChannels = [...allChannels, ...results];
-
-                    if (response.data.next) {
-                        page++;
-                    } else {
-                        hasNext = false;
-                    }
-
-                }
-
-                setChannels(allChannels);
-                processChannelData(allChannels);
+                if (categoryList.length > 0) setActiveGroup(categoryList[0]);
             } catch (error) {
-                console.error("Failed to load channel list", error);
+                console.error("Failed to load metadata", error);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchAllChannels();
+        fetchMetadata();
     }, []);
 
-    const processChannelData = (data) => {
-        // Group by Category
-        const grouped = data.reduce((acc, ch) => {
-            const cat = ch.category || 'Uncategorized';
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(ch);
-            return acc;
-        }, {});
-        setGroups(grouped);
+    // Fetch channels when filters or page changes
+    useEffect(() => {
+        const fetchChannels = async () => {
+            if (page === 1) setLoading(true);
+            setIsFetchingSub(true);
+            try {
+                const params = {};
+                if (activeGroup !== 'All') params.category = activeGroup;
+                if (activeCountry !== 'All') params.country = activeCountry;
+                if (searchQuery) params.search = searchQuery;
 
-        // Extract Countries
-        const countryList = [...new Set(data.map(ch => ch.country).filter(Boolean))].sort();
-        setCountries(countryList);
+                const response = await channelService.getChannels(page, params);
+                const newChannels = response.data.results || [];
 
-        // Set default group
-        if (Object.keys(grouped).length > 0) setActiveGroup(Object.keys(grouped)[0]);
-    };
+                if (page === 1) {
+                    setChannels(newChannels);
+                } else {
+                    setChannels(prev => [...prev, ...newChannels]);
+                }
 
-    const filteredChannels = useMemo(() => {
-        let list = activeGroup === 'All' ? channels : groups[activeGroup] || [];
+                setHasMore(!!response.data.next);
+            } catch (error) {
+                console.error("Failed to fetch channels", error);
+            } finally {
+                setLoading(false);
+                setIsFetchingSub(false);
+            }
+        };
 
-        if (activeCountry !== 'All') {
-            list = list.filter(c => c.country === activeCountry);
-        }
+        fetchChannels();
+    }, [activeGroup, activeCountry, searchQuery, page]);
 
-        if (searchQuery) {
-            list = list.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
-        }
-        return list; // Virtualization would be better for massive lists, but sticking to simple grid for now
-    }, [activeGroup, channels, groups, searchQuery, activeCountry]);
+    // Intersection Observer for Infinite Scroll
+    useEffect(() => {
+        const option = {
+            root: null,
+            rootMargin: '20px',
+            threshold: 0
+        };
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting && hasMore && !isFetchingSub && !loading) {
+                setPage(prev => prev + 1);
+            }
+        }, option);
+
+        if (loaderRef.current) observer.observe(loaderRef.current);
+        return () => observer.disconnect();
+    }, [hasMore, isFetchingSub, loading]);
+
+    // Reset page and Scroll to top when filters change
+    useEffect(() => {
+        setPage(1);
+        if (contentRef.current) contentRef.current.scrollTo(0, 0);
+    }, [activeGroup, activeCountry, searchQuery]);
+
+    const filteredChannels = channels; // Now fully offloaded to server
 
     const handleChannelClick = (channel) => {
         setSelectedChannel(channel);
@@ -189,20 +209,20 @@ const Home = () => {
                 )}
 
                 {/* Grid */}
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                    {!selectedChannel && (
-                        <div className="mb-6">
-                            <h2 className="text-2xl font-bold text-white mb-2">{activeGroup}</h2>
-                            <p className="text-slate-500 text-sm">{filteredChannels.length} Channels Available</p>
-                        </div>
-                    )}
+                <div ref={contentRef} className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-white mb-2">{activeGroup}</h2>
+                        <p className="text-slate-500 text-sm">
+                            {activeGroup !== 'All' ? `${activeGroup} Channels` : 'All Channels'}
+                        </p>
+                    </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-10">
                         {filteredChannels.map((channel, idx) => (
                             <div
-                                key={idx}
+                                key={`${channel.id}-${idx}`}
                                 onClick={() => handleChannelClick(channel)}
-                                className={`group relative aspect-video bg-slate-800 rounded-xl overflow-hidden cursor-pointer border border-slate-700 hover:border-blue-500 hover:shadow-blue-500/20 hover:shadow-lg transition-all transform hover:-translate-y-1 ${selectedChannel?.name === channel.name ? 'ring-2 ring-green-500' : ''}`}
+                                className={`group relative aspect-video bg-slate-800 rounded-xl overflow-hidden cursor-pointer border border-slate-700 hover:border-blue-500 hover:shadow-blue-500/20 hover:shadow-lg transition-all transform hover:-translate-y-1 ${selectedChannel?.id === channel.id ? 'ring-2 ring-blue-500' : ''}`}
                             >
                                 <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
                                     {channel.logo_url ? (
@@ -224,6 +244,24 @@ const Home = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Infinite Scroll Loader */}
+                    <div
+                        ref={loaderRef}
+                        className="h-20 flex items-center justify-center"
+                    >
+                        {isFetchingSub && (
+                            <div className="animate-pulse flex items-center gap-2 text-slate-500">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
+                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-.5s]"></div>
+                                <span className="text-sm ml-2">Loading more...</span>
+                            </div>
+                        )}
+                        {!hasMore && filteredChannels.length > 0 && (
+                            <p className="text-slate-600 text-sm italic">Reached the end of the catalog</p>
+                        )}
                     </div>
 
                     {filteredChannels.length === 0 && (
