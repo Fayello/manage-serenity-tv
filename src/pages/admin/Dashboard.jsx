@@ -39,6 +39,7 @@ const AdminDashboard = () => {
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
     const [pendingAction, setPendingAction] = useState(null); // { type: 'PAYMENT'|'CODE', id?: string }
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
         if (activeTab === 'settings') return; // No generic data fetch for settings
@@ -197,14 +198,33 @@ const AdminDashboard = () => {
                 title={pendingAction?.type === 'PAYMENT' ? 'Confirm Subscription' : 'Generate Master Code'}
             />
 
-            <div className="relative z-10 flex min-h-screen">
+            <div className="relative z-10 flex flex-col lg:flex-row min-h-screen">
+                {/* Mobile Header */}
+                <header className="lg:hidden flex items-center justify-between p-4 bg-black/60 backdrop-blur-xl border-b border-white/5 sticky top-0 z-50">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <LayoutDashboard size={16} className="text-white" />
+                        </div>
+                        <h1 className="text-lg font-black bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">Serenity</h1>
+                    </div>
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="p-2 text-gray-400 hover:text-white"
+                    >
+                        {isMenuOpen ? <XCircle size={24} /> : <div className="space-y-1.5"><div className="w-6 h-0.5 bg-current"></div><div className="w-6 h-0.5 bg-current"></div><div className="w-6 h-0.5 bg-current"></div></div>}
+                    </button>
+                </header>
+
                 {/* Sidebar */}
-                <aside className="w-72 bg-black/40 backdrop-blur-3xl border-r border-white/5 p-8 flex flex-col">
-                    <div className="flex items-center gap-3 mb-12">
+                <aside className={clsx(
+                    "fixed inset-y-0 left-0 z-40 w-72 bg-black/90 lg:bg-black/40 backdrop-blur-3xl border-r border-white/5 p-8 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0",
+                    isMenuOpen ? "translate-x-0" : "-translate-x-full"
+                )}>
+                    <div className="hidden lg:flex items-center gap-3 mb-12">
                         <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <LayoutDashboard size={20} className="text-white" />
                         </div>
-                        <h1 className="text-2xl font-black bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">SERENITY</h1>
+                        <h1 className="text-2xl font-black bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">Serenity Tv Player</h1>
                     </div>
 
                     <nav className="flex-1 space-y-2">
@@ -214,24 +234,28 @@ const AdminDashboard = () => {
                             icon={CreditCard}
                             label="Payments"
                             badge={stats.pending_payments > 0 ? stats.pending_payments : null}
+                            onNavItemClick={() => setIsMenuOpen(false)}
                         />
                         <NavItem
                             active={activeTab === 'codes'}
                             onClick={() => setActiveTab('codes')}
                             icon={Key}
                             label="Activation Codes"
+                            onNavItemClick={() => setIsMenuOpen(false)}
                         />
                         <NavItem
                             active={activeTab === 'licenses'}
                             onClick={() => setActiveTab('licenses')}
                             icon={Smartphone}
                             label="User Licenses"
+                            onNavItemClick={() => setIsMenuOpen(false)}
                         />
                         <NavItem
                             active={activeTab === 'fleet'}
                             onClick={() => setActiveTab('fleet')}
                             icon={DeviceIcon}
                             label="Device Fleet"
+                            onNavItemClick={() => setIsMenuOpen(false)}
                         />
                         <div className="pt-4 mt-4 border-t border-white/10">
                             <NavItem
@@ -239,6 +263,7 @@ const AdminDashboard = () => {
                                 onClick={() => setActiveTab('settings')}
                                 icon={Settings}
                                 label="Settings"
+                                onNavItemClick={() => setIsMenuOpen(false)}
                             />
                         </div>
                     </nav>
@@ -253,11 +278,11 @@ const AdminDashboard = () => {
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 p-10 overflow-y-auto">
+                <main className="flex-1 p-4 md:p-10 overflow-y-auto">
                     <div className="max-w-7xl mx-auto">
                         <header className="flex justify-between items-end mb-10">
                             <div>
-                                <h2 className="text-3xl font-bold text-white mb-2">Management Console</h2>
+                                <h2 className="text-3xl font-bold text-white mb-2">Serenity Tv Player</h2>
                                 <p className="text-gray-400">Manage your subscribers and monitor system growth.</p>
                             </div>
                             <button
@@ -521,7 +546,7 @@ const AdminDashboard = () => {
 
 const NavItem = ({ active, onClick, icon: Icon, label, badge }) => (
     <button
-        onClick={onClick}
+        onClick={() => { onClick(); onNavItemClick?.(); }}
         className={clsx(
             "flex items-center justify-between w-full p-4 rounded-2xl transition-all duration-300 gap-3 group",
             active ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
