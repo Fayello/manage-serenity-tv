@@ -43,7 +43,6 @@ const AdminDashboard = () => {
     const [refreshing, setRefreshing] = useState(false);
 
     // Modern UI State
-    const [modalOpen, setModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState({
         isOpen: false,
         type: 'info',
@@ -155,7 +154,6 @@ const AdminDashboard = () => {
             onConfirm: async () => {
                 setActionLoading(true);
                 try {
-                    // Manual codes can be 365 or 1095 days by default
                     await api.post('/admin/codes/', { plan_duration_days: 365 });
                     showToast("New activation code generated");
                     handleRefresh();
@@ -190,10 +188,49 @@ const AdminDashboard = () => {
         });
     };
 
-    const handleRevokeCode = (id) => { /* logic */ };
-    const handleUpdateExpiry = (id, current) => { /* logic */ };
-    const handleRevokeLicense = (id) => { /* logic */ };
-    const handleRevokeTrial = (fingerprint) => { /* logic */ };
+    const handleRevokeCode = (id) => {
+        setActionModal({
+            isOpen: true,
+            type: 'danger',
+            title: 'Revoke Code',
+            message: 'Are you sure? This code will no longer be usable.',
+            confirmText: 'Revoke',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await api.post(`/admin/codes/${id}/revoke/`);
+                    showToast("Code revoked");
+                    handleRefresh();
+                    setActionModal(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast("Failed to revoke code", 'error');
+                }
+                setActionLoading(false);
+            }
+        });
+    };
+
+    const handleRevokeLicense = (id) => {
+        setActionModal({
+            isOpen: true,
+            type: 'danger',
+            title: 'Revoke License',
+            message: 'Are you sure? Access will be cut off for this device immediately.',
+            confirmText: 'Revoke Access',
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await api.post(`/admin/licenses/${id}/revoke/`);
+                    showToast("License revoked");
+                    handleRefresh();
+                    setActionModal(prev => ({ ...prev, isOpen: false }));
+                } catch (error) {
+                    showToast("Failed to revoke license", 'error');
+                }
+                setActionLoading(false);
+            }
+        });
+    };
 
     return (
         <div className="flex h-screen bg-[#050505] text-white overflow-hidden font-sans selection:bg-blue-500/30">
@@ -227,78 +264,21 @@ const AdminDashboard = () => {
                     </div>
 
                     <nav className="flex-1 space-y-2">
-                        <NavItem
-                            active={activeTab === 'analytics'}
-                            onClick={() => setActiveTab('analytics')}
-                            icon={BarChart3}
-                            label="Smart Metrics"
-                            onNavItemClick={() => setIsMenuOpen(false)}
-                        />
-                        <NavItem
-                            active={activeTab === 'content'}
-                            onClick={() => setActiveTab('content')}
-                            icon={Film}
-                            label="Content Manager"
-                            onNavItemClick={() => setIsMenuOpen(false)}
-                        />
+                        <NavItem active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} icon={BarChart3} label="Smart Metrics" onNavItemClick={() => setIsMenuOpen(false)} />
+                        <NavItem active={activeTab === 'content'} onClick={() => setActiveTab('content')} icon={Film} label="Content Manager" onNavItemClick={() => setIsMenuOpen(false)} />
                         <div className="pt-4 mt-4 border-t border-white/10">
-                            <NavItem
-                                active={activeTab === 'payments'}
-                                onClick={() => setActiveTab('payments')}
-                                icon={CreditCard}
-                                label="Payments"
-                                badge={stats.pending_payments > 0 ? stats.pending_payments : null}
-                                onNavItemClick={() => setIsMenuOpen(false)}
-                            />
-                            <NavItem
-                                active={activeTab === 'codes'}
-                                onClick={() => setActiveTab('codes')}
-                                icon={Key}
-                                label="Activation Codes"
-                                onNavItemClick={() => setIsMenuOpen(false)}
-                            />
-                            <NavItem
-                                active={activeTab === 'licenses'}
-                                onClick={() => setActiveTab('licenses')}
-                                icon={Smartphone}
-                                label="User Licenses"
-                                onNavItemClick={() => setIsMenuOpen(false)}
-                            />
-                            <NavItem
-                                active={activeTab === 'fleet'}
-                                onClick={() => setActiveTab('fleet')}
-                                icon={DeviceIcon}
-                                label="Device Fleet"
-                                onNavItemClick={() => setIsMenuOpen(false)}
-                            />
-                            <NavItem
-                                active={activeTab === 'audit'}
-                                onClick={() => setActiveTab('audit')}
-                                icon={Shield}
-                                label="Security Logs"
-                                onNavItemClick={() => setIsMenuOpen(false)}
-                            />
+                            <NavItem active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} icon={CreditCard} label="Payments" badge={stats.pending_payments > 0 ? stats.pending_payments : null} onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'codes'} onClick={() => setActiveTab('codes')} icon={Key} label="Activation Codes" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'licenses'} onClick={() => setActiveTab('licenses')} icon={Smartphone} label="User Licenses" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'fleet'} onClick={() => setActiveTab('fleet')} icon={DeviceIcon} label="Device Fleet" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={Shield} label="Security Logs" onNavItemClick={() => setIsMenuOpen(false)} />
                         </div>
                         <div className="pt-4 mt-4 border-t border-white/10">
-                            <NavItem
-                                active={activeTab === 'settings'}
-                                onClick={() => setActiveTab('settings')}
-                                icon={Settings}
-                                label="Settings"
-                                onNavItemClick={() => setIsMenuOpen(false)}
-                            />
+                            <NavItem active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings} label="Settings" onNavItemClick={() => setIsMenuOpen(false)} />
                         </div>
                     </nav>
 
-                    <div className="mt-auto pt-6 space-y-3">
-                        <a
-                            href="/Serenity_TV.apk"
-                            download
-                            className="flex items-center gap-3 p-4 rounded-2xl text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 transition-all duration-300 group"
-                        >
-                            <Download size={20} />
-                            <span className="font-bold text-sm tracking-tight">Download APK</span>
-                        </a>
+                    <div className="mt-auto pt-6">
                         <button
                             onClick={() => { authService.logout(); navigate('/admin/login'); }}
                             className="flex items-center gap-3 w-full p-4 rounded-2xl text-red-400 hover:bg-red-500/10 transition-all duration-300 font-bold text-sm"
@@ -311,8 +291,7 @@ const AdminDashboard = () => {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 relative overflow-y-auto overflow-x-hidden custom-scrollbar bg-black/20">
-                {/* Header */}
+            <main className="flex-1 relative overflow-y-auto overflow-x-hidden bg-black/20">
                 <header className="sticky top-0 z-30 flex items-center justify-between p-6 lg:p-10 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5">
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsMenuOpen(true)} className="lg:hidden p-2 bg-white/5 rounded-xl border border-white/10">
@@ -320,152 +299,159 @@ const AdminDashboard = () => {
                         </button>
                         <h2 className="text-2xl font-black tracking-tight capitalize">{activeTab.replace('-', ' ')}</h2>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={handleRefresh}
-                            className={clsx(
-                                "p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all",
-                                refreshing && "animate-spin"
-                            )}
-                        >
-                            <RefreshCw size={20} />
-                        </button>
-                    </div>
+                    <button onClick={handleRefresh} className={clsx("p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all", refreshing && "animate-spin")}>
+                        <RefreshCw size={20} />
+                    </button>
                 </header>
 
                 <div className="p-6 lg:p-10 max-w-7xl mx-auto pb-32">
-                    {/* Views */}
-                    {activeTab === 'analytics' && (
-                        <div className="mb-12">
-                            <AnalyticsView data={data} />
-                        </div>
-                    )}
-
-                    {activeTab === 'content' && (
-                        <div className="mb-12">
-                            <ContentManager channels={Array.isArray(data) ? data : []} onDelete={handleDeleteChannel} />
-                        </div>
-                    )}
-
-                    {activeTab !== 'analytics' && activeTab !== 'content' && (
+                    {/* Stats Grid */}
+                    {activeTab !== 'analytics' && activeTab !== 'content' && activeTab !== 'settings' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-                            <StatCard title="Total Billing" value={`${stats.revenue.toLocaleString()} ${stats.currency}`} subtitle="Lifetime confirmed revenue" icon={TrendingUp} color="bg-blue-500" />
-                            <StatCard title="Active Users" value={stats.active_users} subtitle="Devices active in last 24h" icon={Users} color="bg-green-500" />
-                            <StatCard title="Active Trials" value={stats.trial_users} subtitle="Users in 3-day trial period" icon={Clock} color="bg-orange-500" />
-                            <StatCard title="Pending Syncs" value={stats.pending_payments} subtitle="Payments awaiting approval" icon={Clock} color="bg-yellow-500" />
-                            <StatCard title="Total Fleet" value={stats.total_devices} subtitle="Discovered unique handests" icon={DeviceIcon} color="bg-purple-500" />
+                            <StatCard title="Total Billing" value={`${stats.revenue.toLocaleString()} ${stats.currency}`} subtitle="Lifetime revenue" icon={TrendingUp} color="bg-blue-500" />
+                            <StatCard title="Active Users" value={stats.active_users} subtitle="Last 24h" icon={Users} color="bg-green-500" />
+                            <StatCard title="Active Trials" value={stats.trial_users} subtitle="3-day trial" icon={Clock} color="bg-orange-500" />
+                            <StatCard title="Pending Syncs" value={stats.pending_payments} subtitle="Awaiting approval" icon={Clock} color="bg-yellow-500" />
+                            <StatCard title="Total Fleet" value={stats.total_devices} subtitle="Unique handsets" icon={DeviceIcon} color="bg-purple-500" />
                         </div>
                     )}
 
-                    {/* Content Area */}
-                    {activeTab === 'settings' ? (
+                    {/* Views */}
+                    {activeTab === 'analytics' && <AnalyticsView data={data} />}
+                    {activeTab === 'content' && <ContentManager channels={Array.isArray(data) ? data : []} onDelete={handleDeleteChannel} />}
+                    {activeTab === 'settings' && (
                         <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl p-12 text-center">
                             <Settings size={48} className="mx-auto mb-4 text-gray-600 opacity-20" />
                             <h3 className="text-xl font-bold text-gray-500">Settings Coming Soon</h3>
-                            <p className="text-gray-600 mt-2">The management of administrator accounts and system-wide configurations is being finalized.</p>
+                            <p className="text-gray-600 mt-2">The management of administrator accounts is being finalized.</p>
                         </div>
-                    ) : (
-                        activeTab !== 'analytics' && activeTab !== 'content' && (
-                            <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl border-white/10">
-                                <div className="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-                                    <h3 className="font-bold text-lg flex items-center gap-2">
-                                        {activeTab === 'payments' && <><CreditCard size={18} /> Recent Transactions</>}
-                                        {activeTab === 'codes' && <><Key size={18} /> Master Codes</>}
-                                        {activeTab === 'licenses' && <><Smartphone size={18} /> Active Licenses</>}
-                                        {activeTab === 'fleet' && <><DeviceIcon size={18} /> Device Registry</>}
-                                        {activeTab === 'audit' && <><Shield size={18} /> Security Audit Trail</>}
-                                    </h3>
-                                    {activeTab === 'codes' && (
-                                        <button onClick={handleGenerateCode} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 transition-all">+ New Activation</button>
-                                    )}
-                                </div>
-                                <div className="p-4 md:p-0 min-h-[400px]">
-                                    <AnimatePresence mode="wait">
-                                        {loading ? (
-                                            <div className="flex flex-col items-center justify-center p-20 gap-4">
-                                                <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                                                <p className="text-gray-500 font-medium font-mono text-sm uppercase tracking-tighter">Synchronizing secure data...</p>
-                                            </div>
-                                        ) : (
-                                            <div className="w-full">
-                                                <table key={activeTab} className="hidden lg:table w-full text-left">
-                                                    <thead className="bg-white/[0.02] text-gray-400 text-xs font-bold uppercase tracking-widest">
-                                                        <tr>
-                                                            {activeTab === 'payments' && <><th className="p-6">Reference</th><th className="p-6">Amount</th><th className="p-6">Plan</th><th className="p-6">Status</th><th className="p-6">Actions</th></>}
-                                                            {activeTab === 'codes' && <><th className="p-6">Access Code</th><th className="p-6">Duration</th><th className="p-6">Source (Audit)</th><th className="p-6">State</th><th className="p-6">Issued On</th><th className="p-6">Actions</th></>}
-                                                            {activeTab === 'licenses' && <><th className="p-6">Target Fingerprint</th><th className="p-6">Linked Code</th><th className="p-6">Expiration</th><th className="p-6">Status & Audit</th><th className="p-6">Actions</th></>}
-                                                            {activeTab === 'fleet' && <><th className="p-6">Identifier</th><th className="p-6">Specs</th><th className="p-6">Network Info</th><th className="p-6">Activity</th><th className="p-6">Trial</th><th className="p-6">Actions</th></>}
-                                                            {activeTab === 'audit' && <><th className="p-6">Timestamp</th><th className="p-6">Admin</th><th className="p-6">Action</th><th className="p-6">Resource</th><th className="p-6">Details</th></>}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-white/5">
-                                                        {data.map((item, idx) => (
-                                                            <motion.tr key={item.id || item.code || item.fingerprint} className="hover:bg-white/[0.02] transition-colors group">
-                                                                {activeTab === 'payments' && (
-                                                                    <>
-                                                                        <td className="p-6 font-mono text-sm text-blue-400 font-bold">{item.payment_reference}</td>
-                                                                        <td className="p-6 font-bold">{item.amount} {item.currency}</td>
-                                                                        <td className="p-6"><span className="px-3 py-1 bg-white/5 rounded-lg text-xs font-mono">{item.plan_type}</span></td>
-                                                                        <td className="p-6"><StatusBadge status={item.status} /></td>
-                                                                        <td className="p-6">{item.status === 'PENDING' && <button onClick={() => handleConfirmPayment(item.id, item.plan_type)} className="bg-green-600/10 text-green-400 border border-green-500/20 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600 hover:text-white transition-all">Confirm</button>}</td>
-                                                                    </>
-                                                                )}
-                                                                {/* ... codes, licenses, fleet, audit mappings would follow similarly ... */}
-                                                                {/* (Shortened for space - in real file I'll keep them) */}
-                                                            </motion.tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                    )}
+
+                    {/* Main Tables */}
+                    {['payments', 'codes', 'licenses', 'fleet', 'audit'].includes(activeTab) && (
+                        <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl border-white/10">
+                            <div className="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                                <h3 className="font-bold text-lg flex items-center gap-2">
+                                    {activeTab === 'payments' && <><CreditCard size={18} /> Recent Transactions</>}
+                                    {activeTab === 'codes' && <><Key size={18} /> Master Codes</>}
+                                    {activeTab === 'licenses' && <><Smartphone size={18} /> User Licenses</>}
+                                    {activeTab === 'fleet' && <><DeviceIcon size={18} /> Device Registry</>}
+                                    {activeTab === 'audit' && <><Shield size={18} /> Security Logs</>}
+                                </h3>
+                                {activeTab === 'codes' && (
+                                    <button onClick={handleGenerateCode} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 transition-all">+ New Activation</button>
+                                )}
                             </div>
-                        )
+                            <div className="p-0 min-h-[400px]">
+                                <AnimatePresence mode="wait">
+                                    {loading ? (
+                                        <div className="flex flex-col items-center justify-center p-20 gap-4">
+                                            <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                                            <p className="text-gray-500 font-medium text-sm font-mono uppercase tracking-tighter">Syncing data...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left">
+                                                <thead className="bg-white/[0.02] text-gray-400 text-xs font-bold uppercase tracking-widest">
+                                                    <tr>
+                                                        {activeTab === 'payments' && <><th className="p-6">Reference</th><th className="p-6">Amount</th><th className="p-6">Plan</th><th className="p-6">Status</th><th className="p-6 text-right">Ops</th></>}
+                                                        {activeTab === 'codes' && <><th className="p-6">Access Code</th><th className="p-6">Duration</th><th className="p-6">Reference</th><th className="p-6">State</th><th className="p-6 text-right">Ops</th></>}
+                                                        {activeTab === 'licenses' && <><th className="p-6">Device</th><th className="p-6">Linked Code</th><th className="p-6">Expiration</th><th className="p-6">Status</th><th className="p-6 text-right">Ops</th></>}
+                                                        {activeTab === 'fleet' && <><th className="p-6">Model</th><th className="p-6">Specs</th><th className="p-6">Network</th><th className="p-6">Last Seen</th><th className="p-6">Trial</th></>}
+                                                        {activeTab === 'audit' && <><th className="p-6">Time</th><th className="p-6">Admin</th><th className="p-6">Action</th><th className="p-6">Target</th><th className="p-6">Details</th></>}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-white/5">
+                                                    {data.map((item, idx) => (
+                                                        <tr key={item.id || item.code || item.fingerprint} className="hover:bg-white/[0.02] transition-colors group">
+                                                            {activeTab === 'payments' && (
+                                                                <>
+                                                                    <td className="p-6 font-mono text-sm text-blue-400 font-bold">{item.payment_reference}</td>
+                                                                    <td className="p-6 font-bold">{item.amount} {item.currency}</td>
+                                                                    <td className="p-6 text-xs text-gray-400">{item.plan_type}</td>
+                                                                    <td className="p-6"><StatusBadge status={item.status} /></td>
+                                                                    <td className="p-6 text-right">
+                                                                        {item.status === 'PENDING' && <button onClick={() => handleConfirmPayment(item.id, item.plan_type)} className="bg-green-600/10 text-green-400 px-4 py-1.5 rounded-lg text-xs font-bold border border-green-500/20 hover:bg-green-600 hover:text-white transition-all">Confirm</button>}
+                                                                    </td>
+                                                                </>
+                                                            )}
+                                                            {activeTab === 'codes' && (
+                                                                <>
+                                                                    <td className="p-6 font-mono text-white font-bold">{item.code}</td>
+                                                                    <td className="p-6 text-gray-400 text-sm">{item.plan_duration_days} Days</td>
+                                                                    <td className="p-6 text-xs font-mono text-gray-500 uppercase">{item.payment_reference || 'MANUAL'}</td>
+                                                                    <td className="p-6"><StatusBadge status={item.status} /></td>
+                                                                    <td className="p-6 text-right">
+                                                                        {item.status === 'UNUSED' && <button onClick={() => handleRevokeCode(item.id)} className="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all"><Trash2 size={16} /></button>}
+                                                                    </td>
+                                                                </>
+                                                            )}
+                                                            {activeTab === 'licenses' && (
+                                                                <>
+                                                                    <td className="p-6 font-mono text-xs text-gray-400 max-w-[150px] truncate">{item.device}</td>
+                                                                    <td className="p-6 font-mono text-xs text-blue-300">{item.activation_code}</td>
+                                                                    <td className="p-6 text-sm font-bold">{formatDate(item.expiry_date)}</td>
+                                                                    <td className="p-6"><span className={clsx("px-2 py-1 rounded text-[10px] font-bold", item.is_active ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400")}>{item.is_active ? 'ACTIVE' : 'EXPIRED'}</span></td>
+                                                                    <td className="p-6 text-right">
+                                                                        {item.is_active && <button onClick={() => handleRevokeLicense(item.id)} className="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all"><Trash2 size={16} /></button>}
+                                                                    </td>
+                                                                </>
+                                                            )}
+                                                            {activeTab === 'fleet' && (
+                                                                <>
+                                                                    <td className="p-6 font-bold text-sm">{item.model}</td>
+                                                                    <td className="p-6 text-xs text-gray-500 font-mono">{item.os_version}</td>
+                                                                    <td className="p-6 text-xs font-bold text-blue-400">{item.last_ip}</td>
+                                                                    <td className="p-6 text-xs text-gray-500">{formatDateTime(item.last_seen)}</td>
+                                                                    <td className="p-6">
+                                                                        <span className={clsx("text-[10px] font-black uppercase px-2 py-1 rounded", item.trial_used ? "bg-red-500/10 text-red-500" : item.trial_start_date ? "bg-orange-500/10 text-orange-400" : "bg-gray-500/10 text-gray-500")}>
+                                                                            {item.trial_used ? 'Expired' : item.trial_start_date ? 'Trialing' : 'None'}
+                                                                        </span>
+                                                                    </td>
+                                                                </>
+                                                            )}
+                                                            {activeTab === 'audit' && (
+                                                                <>
+                                                                    <td className="p-6 text-xs text-gray-500 font-mono">{formatDateTime(item.timestamp)}</td>
+                                                                    <td className="p-6 text-xs font-bold text-blue-400">{item.admin_username || 'System'}</td>
+                                                                    <td className="p-6"><span className="px-2 py-0.5 rounded text-[9px] font-black border uppercase tracking-widest border-white/10 bg-white/5">{item.action.replace('_', ' ')}</span></td>
+                                                                    <td className="p-6 text-xs text-gray-400 truncate max-w-[100px]">{item.resource_type}: {item.resource_id.slice(0, 8)}</td>
+                                                                    <td className="p-6 text-[10px] text-gray-600 truncate max-w-[150px]">{JSON.stringify(item.details)}</td>
+                                                                </>
+                                                            )}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {data.length === 0 && <div className="p-20 text-center text-gray-600 font-mono text-sm tracking-widest">NO RECORDS FOUND</div>}
+                                        </div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </div>
                     )}
                 </div>
             </main>
 
             <ActionModal {...actionModal} loading={actionLoading} onClose={() => setActionModal(prev => ({ ...prev, isOpen: false }))} />
-
-            {toast && (
-                <div className={clsx("fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-5", toast.type === 'error' ? 'bg-red-600' : 'bg-blue-600')}>
-                    <span className="font-bold text-sm tracking-tight">{toast.message}</span>
-                </div>
-            )}
+            {toast && <div className={clsx("fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-5", toast.type === 'error' ? 'bg-red-600' : 'bg-blue-600')}><span className="font-bold text-sm">{toast.message}</span></div>}
         </div>
     );
 };
 
 const NavItem = ({ active, onClick, icon: Icon, label, badge, onNavItemClick }) => (
-    <button
-        onClick={() => { onClick(); onNavItemClick?.(); }}
-        className={clsx(
-            "flex items-center justify-between w-full p-4 rounded-2xl transition-all duration-300 gap-3 group",
-            active ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
-        )}
-    >
-        <div className="flex items-center gap-3">
-            <Icon size={20} className={clsx("transition-transform duration-300", active ? "scale-110" : "group-hover:scale-110")} />
-            <span className="font-semibold text-sm">{label}</span>
-        </div>
+    <button onClick={() => { onClick(); onNavItemClick?.(); }} className={clsx("flex items-center justify-between w-full p-4 rounded-2xl transition-all duration-300 gap-3 group", active ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-gray-500 hover:text-gray-300 hover:bg-white/5")}>
+        <div className="flex items-center gap-3"><Icon size={20} className={clsx("transition-transform", active ? "scale-110" : "group-hover:scale-110")} /><span className="font-semibold text-sm">{label}</span></div>
         {badge && <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full ring-4 ring-black/40">{badge}</span>}
     </button>
 );
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl p-6 transition-all hover:translate-y-[-4px] hover:bg-white/10 group">
-        <div className="flex items-start justify-between mb-4">
-            <div className={clsx("p-3 rounded-2xl", color)}>
-                <Icon className="text-white" size={24} />
-            </div>
-        </div>
-        <div>
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">{title}</p>
-            <h3 className="text-3xl font-black text-white tracking-tighter">{value}</h3>
-            <p className="text-gray-500 text-[10px] mt-2 font-medium">{subtitle}</p>
-        </div>
+    <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl p-6 transition-all hover:bg-white/10">
+        <div className={clsx("p-3 rounded-2xl inline-block mb-4", color)}><Icon size={20} className="text-white" /></div>
+        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
+        <h3 className="text-2xl font-black text-white">{value}</h3>
+        <p className="text-gray-500 text-[10px] mt-1">{subtitle}</p>
     </div>
 );
 
@@ -480,44 +466,37 @@ const AnalyticsView = ({ data }) => {
     const topChannels = data.top_channels || [];
     const maxViews = Math.max(...topChannels.map(c => c.views), 1);
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            <div className="bg-white/5 p-8 rounded-3xl border border-white/5">
-                <h3 className="text-xl font-bold text-white mb-6">Audience Peak Channels</h3>
-                <div className="space-y-4">
-                    {topChannels.map((channel, idx) => (
-                        <div key={idx} className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-white font-bold">{idx + 1}. {channel.channel__name}</span>
-                                <span className="text-gray-400 font-mono text-xs">{channel.views} views</span>
-                            </div>
-                            <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-                                <motion.div initial={{ width: 0 }} animate={{ width: `${(channel.views / maxViews) * 100}%` }} className="absolute top-0 left-0 h-full bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)]" />
-                            </div>
+        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 mb-12">
+            <h3 className="text-xl font-bold mb-6">Top Performing Content</h3>
+            <div className="space-y-4">
+                {topChannels.map((channel, idx) => (
+                    <div key={idx} className="space-y-2">
+                        <div className="flex justify-between text-sm"><span className="font-bold">{idx + 1}. {channel.channel__name}</span><span className="text-gray-400">{channel.views} views</span></div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(channel.views / maxViews) * 100}%` }} className="h-full bg-blue-600 rounded-full" />
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
 };
 
 const ContentManager = ({ channels, onDelete }) => (
-    <div className="bg-white/5 border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
-            <h3 className="font-bold text-lg flex items-center gap-2"><Film size={18} /> Catalog Master</h3>
-        </div>
+    <div className="bg-white/5 border border-white/5 rounded-[2.5rem] overflow-hidden">
+        <div className="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center"><h3 className="font-bold flex items-center gap-2"><Film size={18} /> Catalog Master</h3></div>
         <div className="overflow-x-auto">
-            <table className="w-full text-left font-sans">
-                <thead className="bg-white/[0.02] text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                    <tr><th className="p-6">Entity</th><th className="p-6">Category</th><th className="p-6">Region</th><th className="p-6 text-right">Ops</th></tr>
+            <table className="w-full text-left">
+                <thead className="bg-white/[0.02] text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                    <tr><th className="p-6">Name</th><th className="p-6">Category</th><th className="p-6">Region</th><th className="p-6 text-right">Ops</th></tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                     {channels.map((ch) => (
                         <tr key={ch.id} className="hover:bg-white/[0.01]">
-                            <td className="p-6 font-bold text-white text-sm">{ch.name}</td>
+                            <td className="p-6 font-bold text-sm">{ch.name}</td>
                             <td className="p-6 text-xs text-blue-400">{ch.category}</td>
                             <td className="p-6 text-xs text-gray-500">{ch.country}</td>
-                            <td className="p-6 text-right"><button onClick={() => onDelete(ch.id)} className="text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-all"><Trash2 size={16} /></button></td>
+                            <td className="p-6 text-right"><button onClick={() => onDelete(ch.id)} className="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all"><Trash2 size={16} /></button></td>
                         </tr>
                     ))}
                 </tbody>
