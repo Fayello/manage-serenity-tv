@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchChannels, groupChannels, getCountries } from '../services/iptv';
+import { channelService } from '../services/api';
 import VideoPlayer from '../components/VideoPlayer';
 import { Play, LogOut, Menu, Search, X } from 'lucide-react';
-
-const M3U_URL = 'https://iptv-org.github.io/iptv/index.m3u';
 
 const Home = () => {
     const [channels, setChannels] = useState([]);
@@ -17,25 +15,60 @@ const Home = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     useEffect(() => {
-        const loadChannels = async () => {
+        const fetchAllChannels = async () => {
             setLoading(true);
-            const data = await fetchChannels(M3U_URL);
-            // Limit for performance demo if huge
-            // const limitedData = data.slice(0, 5000); 
-            const grouped = groupChannels(data);
-            const countryList = getCountries(data);
-            setChannels(data);
-            setGroups(grouped);
-            setCountries(countryList);
+            try {
+                let allChannels = [];
+                let page = 1;
+                let hasNext = true;
 
-            // Set default group to first one or 'General'
-            const groupNames = Object.keys(grouped);
-            if (groupNames.length > 0) setActiveGroup(groupNames[0]);
+                while (hasNext) {
+                    const response = await channelService.getChannels(page);
+                    // Standard Django Rest Framework Pagination: { count: N, next: URL, previous: URL, results: [] }
+                    // OR if custom pagination: check response structure. 
+                    // Based on our code, it's standard PageNumberPagination.
+                    const results = response.data.results || [];
+                    allChannels = [...allChannels, ...results];
 
-            setLoading(false);
+                    if (response.data.next) {
+                        page++;
+                    } else {
+                        hasNext = false;
+                    }
+
+                    // Safety break for huge lists if needed, but for now we mirror mobile app eager load
+                    if (page > 50) hasNext = false;
+                }
+
+                setChannels(allChannels);
+                processChannelData(allChannels);
+            } catch (error) {
+                console.error("Failed to load channel list", error);
+            } finally {
+                setLoading(false);
+            }
         };
-        loadChannels();
+
+        fetchAllChannels();
     }, []);
+
+    const processChannelData = (data) => {
+        // Group by Category
+        const grouped = data.reduce((acc, ch) => {
+            const cat = ch.category || 'Uncategorized';
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(ch);
+            return acc;
+        }, {});
+        setGroups(grouped);
+
+        // Extract Countries
+        const countryList = [...new Set(data.map(ch => ch.country).filter(Boolean))].sort();
+        setCountries(countryList);
+
+        // Set default group
+        if (Object.keys(grouped).length > 0) setActiveGroup(Object.keys(grouped)[0]);
+    };
 
     const filteredChannels = useMemo(() => {
         let list = activeGroup === 'All' ? channels : groups[activeGroup] || [];
@@ -47,22 +80,31 @@ const Home = () => {
         if (searchQuery) {
             list = list.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
         }
-        return list.slice(0, 100); // Pagination/Limit for rendering performance
+        return list; // Virtualization would be better for massive lists, but sticking to simple grid for now
     }, [activeGroup, channels, groups, searchQuery, activeCountry]);
 
     const handleChannelClick = (channel) => {
+        // Ensure we pass the stream URL properly
+        // Backend returns `stream_url` (from model) usually, not `url`. Let's check serializer or map it.
+        // Serializer usually returns model fields. 
+        // Let's assume standard serializer which dumps fields. Model has `stream_url`.
         setSelectedChannel(channel);
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('serenity_activated');
+        // "Deactivate" locally just clears session for user perception which triggers re-check
+        // In real world, we might want to also call an API to clearing specific session if we had one
+        // But since we track by Device ID, we just reload page which triggers verifyStatus
         window.location.reload();
     };
 
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                    <p className="text-slate-500 font-mono text-sm animate-pulse">SYNCING CONTENT DO NOT CLOSE...</p>
+                </div>
             </div>
         );
     }
@@ -126,7 +168,7 @@ const Home = () => {
                 <div className="p-4 border-t border-slate-800">
                     <button onClick={handleLogout} className="flex items-center gap-3 text-red-400 hover:text-red-300 w-full p-2 rounded-lg hover:bg-slate-800 transition-colors">
                         <LogOut size={20} />
-                        {sidebarOpen && <span>Deactivate</span>}
+                        {sidebarOpen && <span>Reload / Re-Auth</span>}
                     </button>
                 </div>
             </div>
@@ -142,12 +184,12 @@ const Home = () => {
                             </button>
                         </div>
                         <VideoPlayer
-                            url={selectedChannel.url}
+                            url={selectedChannel.stream_url}
                             className="w-full h-full"
                         />
                         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-6 pt-20 pointer-events-none">
                             <h2 className="text-2xl font-bold text-white drop-shadow-md">{selectedChannel.name}</h2>
-                            <p className="text-slate-300 text-sm opacity-80">{selectedChannel.group}</p>
+                            <p className="text-slate-300 text-sm opacity-80">{selectedChannel.category}</p>
                         </div>
                     </div>
                 )}
@@ -169,8 +211,8 @@ const Home = () => {
                                 className={`group relative aspect-video bg-slate-800 rounded-xl overflow-hidden cursor-pointer border border-slate-700 hover:border-blue-500 hover:shadow-blue-500/20 hover:shadow-lg transition-all transform hover:-translate-y-1 ${selectedChannel?.name === channel.name ? 'ring-2 ring-green-500' : ''}`}
                             >
                                 <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-                                    {channel.logo ? (
-                                        <img src={channel.logo} alt={channel.name} className="max-w-[80%] max-h-[80%] object-contain opacity-80 group-hover:opacity-100 transition-opacity" loading="lazy" />
+                                    {channel.logo_url ? (
+                                        <img src={channel.logo_url} alt={channel.name} className="max-w-[80%] max-h-[80%] object-contain opacity-80 group-hover:opacity-100 transition-opacity" loading="lazy" />
                                     ) : (
                                         <span className="text-2xl font-bold text-slate-700 group-hover:text-slate-500 select-none">
                                             {channel.name.charAt(0)}

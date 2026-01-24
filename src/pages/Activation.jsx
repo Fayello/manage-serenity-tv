@@ -11,12 +11,14 @@ const Activation = ({ onActivate }) => {
         setDeviceId(getDeviceId());
     }, []);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (activateDevice(activationCode)) {
+        setError('');
+        try {
+            await activateDevice(activationCode);
             onActivate();
-        } else {
-            setError('Invalid activation code. Please try again.');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Invalid activation code. Please try again.');
         }
     };
 

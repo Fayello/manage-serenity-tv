@@ -95,4 +95,25 @@ export const authService = {
     }
 };
 
+export const deviceService = {
+    register: async (fingerprint, model = 'Web Browser', osVersion = navigator.userAgent) => {
+        return await api.post('/device/register', { fingerprint, model, os_version: osVersion });
+    },
+    checkStatus: async (fingerprint) => {
+        return await api.post('/license/status', { device_hash: fingerprint });
+    },
+    activate: async (code, fingerprint) => {
+        return await api.post('/license/activate', { activation_code: code, device_hash: fingerprint });
+    },
+    startTrial: async (fingerprint) => {
+        return await api.post('/license/trial/start', { device_hash: fingerprint });
+    }
+};
+
+export const channelService = {
+    getChannels: async (page = 1) => {
+        return await api.get(`/channels/?page=${page}`);
+    }
+};
+
 export default api;

@@ -8,11 +8,30 @@ import AdminRoute from './components/AdminRoute';
 import { checkActivationStatus } from './utils/device';
 
 function App() {
-  const [isActivated, setIsActivated] = useState(checkActivationStatus());
+  const [isActivated, setIsActivated] = useState(null); // null = unknown/loading
+
+  useEffect(() => {
+    const verify = async () => {
+      const status = await checkActivationStatus();
+      setIsActivated(status);
+    };
+    verify();
+  }, []);
 
   const handleActivation = () => {
     setIsActivated(true);
   };
+
+  if (isActivated === null) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+        <div className="animate-pulse flex flex-col items-center gap-2">
+          <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+          <span className="text-xs font-mono text-slate-500">VERIFYING DEVICE...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
