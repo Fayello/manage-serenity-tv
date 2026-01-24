@@ -103,7 +103,7 @@ export const deviceService = {
         return await api.post('/license/status', { device_hash: fingerprint });
     },
     activate: async (code, fingerprint) => {
-        return await api.post('/license/activate', { activation_code: code, device_hash: fingerprint });
+        return await api.post('/license/activate', { code: code, device_hash: fingerprint });
     },
     startTrial: async (fingerprint) => {
         return await api.post('/license/trial/start', { device_hash: fingerprint });
