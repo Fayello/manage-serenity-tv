@@ -5,9 +5,10 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs';
 const fpPromise = FingerprintJS.load();
 
 export const getDeviceId = async () => {
-    // 1. Try local storage first for speed
+    // 1. Try local storage first for speed and backward compatibility
     let storedId = localStorage.getItem('serenity_device_id');
-    if (storedId && storedId.length > 20) { // Simple check for likely FP hash
+    // Accept legacy MAC IDs (17 chars) or new FP hashes (32 chars)
+    if (storedId && storedId.length > 10) {
         return storedId;
     }
 
