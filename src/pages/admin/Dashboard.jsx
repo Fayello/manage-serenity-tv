@@ -329,7 +329,7 @@ const AdminDashboard = () => {
                         <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <LayoutDashboard size={20} className="text-white" />
                         </div>
-                        <h1 className="text-2xl font-black bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">Serenity Tv Player</h1>
+                        <h1 className="text-2xl font-black bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">Serenity TV</h1>
                     </div>
 
                     <nav className="flex-1 space-y-2">
@@ -379,7 +379,7 @@ const AdminDashboard = () => {
                             />
                         </div>
                         <a
-                            href="/Serenity_Tv_Player.apk"
+                            href="/Serenity_TV.apk"
                             download
                             className="flex items-center gap-3 p-4 mt-2 rounded-xl text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 transition-all duration-300 group"
                             title="Download rebranded APK for manual distribution"
@@ -403,7 +403,7 @@ const AdminDashboard = () => {
                     <div className="max-w-7xl mx-auto">
                         <header className="flex justify-between items-end mb-10">
                             <div>
-                                <h2 className="text-3xl font-bold text-white mb-2">Serenity Tv Player</h2>
+                                <h2 className="text-3xl font-bold text-white mb-2">Serenity TV</h2>
                                 <p className="text-gray-400">Manage your subscribers and monitor system growth.</p>
                             </div>
                             <button
