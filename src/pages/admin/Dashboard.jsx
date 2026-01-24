@@ -268,7 +268,7 @@ const AdminDashboard = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#050510] relative overflow-hidden text-white font-['Inter',sans-serif]">
+        <div className="h-screen bg-[#050510] relative overflow-hidden text-white font-['Inter',sans-serif]">
             {/* Mesh Gradients */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 blur-[120px] rounded-full" />
@@ -303,7 +303,7 @@ const AdminDashboard = () => {
                 )}
             </AnimatePresence>
 
-            <div className="relative z-10 flex flex-col lg:flex-row min-h-screen">
+            <div className="relative z-10 flex flex-col lg:flex-row h-full">
                 {/* Mobile Header */}
                 <header className="lg:hidden flex items-center justify-between p-4 bg-black/60 backdrop-blur-xl border-b border-white/5 sticky top-0 z-50">
                     <div className="flex items-center gap-2">
