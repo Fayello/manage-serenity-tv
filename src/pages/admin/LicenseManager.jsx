@@ -30,7 +30,7 @@ const LicenseManager = () => {
 
             const response = await api.get('/admin/licenses/');
             // This returns a list. We filter match.
-            const licenses = response.data.results || response.data;
+            const licenses = Array.isArray(response.data.results) ? response.data.results : (Array.isArray(response.data) ? response.data : []);
             const found = licenses.find(l =>
                 l.activation_code?.code === searchTerm ||
                 l.device?.fingerprint === searchTerm

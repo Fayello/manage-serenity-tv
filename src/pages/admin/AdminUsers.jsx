@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api, { authService } from '../../services/api';
+import api from '../../services/api';
+import { authService } from '../../services/api';
 import { Trash2, UserPlus, Shield } from 'lucide-react';
 
 const AdminUsers = () => {
@@ -11,17 +12,22 @@ const AdminUsers = () => {
 
     useEffect(() => {
         fetchUsers();
-        const user = authService.getCurrentUser();
-        setCurrentUser(user);
+        try {
+            const user = authService.getCurrentUser();
+            setCurrentUser(user);
+        } catch (e) {
+            console.error("Auth error", e);
+        }
     }, []);
 
     const fetchUsers = async () => {
         setLoading(true);
         try {
             const response = await api.get('/admin/users/');
-            setUsers(response.data);
+            setUsers(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error("Failed to fetch admins", error);
+            setUsers([]);
         } finally {
             setLoading(false);
         }
