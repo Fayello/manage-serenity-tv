@@ -8,7 +8,11 @@ const Activation = ({ onActivate }) => {
     const [deviceId, setDeviceId] = useState('');
 
     useEffect(() => {
-        setDeviceId(getDeviceId());
+        const fetchId = async () => {
+            const id = await getDeviceId();
+            setDeviceId(id);
+        };
+        fetchId();
     }, []);
 
     const handleSubmit = async (e) => {
