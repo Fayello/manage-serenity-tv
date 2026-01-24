@@ -19,6 +19,8 @@ const VideoPlayer = ({ url, poster, className, autoPlay = true }) => {
             const hls = new Hls({
                 enableWorker: true,
                 lowLatencyMode: true,
+                maxBufferLength: 30, // Increase buffer to allow higher quality pre-fetch
+                maxMaxBufferLength: 60,
             });
             hlsRef.current = hls;
             hls.loadSource(url);
