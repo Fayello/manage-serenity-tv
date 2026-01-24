@@ -37,9 +37,11 @@ const Activation = ({ onActivate }) => {
                     <p className="text-slate-400">Please activate your device to continue.</p>
                 </div>
 
-                <div className="bg-slate-950/50 rounded-xl p-6 mb-8 border border-slate-800 text-center">
+                <div className="bg-slate-950/50 rounded-xl p-6 mb-8 border border-slate-800 text-center overflow-hidden">
                     <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-2">Your Device ID</p>
-                    <p className="text-2xl font-mono text-blue-400 tracking-wider font-bold">{deviceId}</p>
+                    <p className="text-xl font-mono text-blue-400 font-bold break-all select-all">
+                        {deviceId.match(/.{1,4}/g)?.join(' ') || deviceId}
+                    </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
