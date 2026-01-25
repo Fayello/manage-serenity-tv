@@ -27,6 +27,7 @@ import clsx from 'clsx';
 import ActionModal from '../../components/ActionModal';
 import ActivationModal from '../../components/ActivationModal';
 import AdminUsers from './AdminUsers';
+import GenerateCodeModal from '../../components/GenerateCodeModal';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -56,6 +57,7 @@ const AdminDashboard = () => {
     const [toast, setToast] = useState(null); // { message: string, type: 'success'|'error' }
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+    const [generateModalOpen, setGenerateModalOpen] = useState(false);
 
     // Helpers
     const showToast = (message, type = 'success') => {
@@ -146,25 +148,7 @@ const AdminDashboard = () => {
     };
 
     const handleGenerateCode = () => {
-        setActionModal({
-            isOpen: true,
-            type: 'info',
-            title: 'Generate Master Code',
-            message: 'Create a new manual activation code?',
-            confirmText: 'Generate Code',
-            onConfirm: async () => {
-                setActionLoading(true);
-                try {
-                    await api.post('/admin/codes/generate/', { duration: 365 });
-                    showToast("New activation code generated");
-                    handleRefresh();
-                    setActionModal(prev => ({ ...prev, isOpen: false }));
-                } catch (error) {
-                    showToast("Failed to generate code", 'error');
-                }
-                setActionLoading(false);
-            }
-        });
+        setGenerateModalOpen(true);
     };
 
     const handleDeleteChannel = (id) => {
@@ -433,6 +417,11 @@ const AdminDashboard = () => {
             </main>
 
             <ActionModal {...actionModal} loading={actionLoading} onClose={() => setActionModal(prev => ({ ...prev, isOpen: false }))} />
+            <GenerateCodeModal
+                isOpen={generateModalOpen}
+                onClose={() => setGenerateModalOpen(false)}
+                onSuccess={() => { showToast("License Generated Successfully"); handleRefresh(); }}
+            />
             {toast && <div className={clsx("fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-5", toast.type === 'error' ? 'bg-red-600' : 'bg-blue-600')}><span className="font-bold text-sm">{toast.message}</span></div>}
         </div>
     );
