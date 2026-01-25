@@ -160,7 +160,7 @@ const Home = () => {
         setSelectedChannel(channel);
     };
 
-    // Analytics: Record View when channel changes
+    // Analytics: Record View and Heartbeat when channel changes
     useEffect(() => {
         if (selectedChannel) {
             const record = async () => {
@@ -171,7 +171,13 @@ const Home = () => {
                     console.error("Failed to record view", e);
                 }
             };
+
+            // Initial record
             record();
+
+            // Heartbeat every 60 seconds
+            const interval = setInterval(record, 60000);
+            return () => clearInterval(interval);
         }
     }, [selectedChannel]);
 
