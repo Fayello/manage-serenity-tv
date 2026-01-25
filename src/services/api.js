@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
-export const API_URL = 'https://backend-serenity-tv.onrender.com/api';
+export const API_URL = 'https://backend.goutsecret.com/api';
 
 const api = axios.create({
     baseURL: API_URL,

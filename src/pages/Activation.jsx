@@ -50,7 +50,22 @@ const Activation = ({ onActivate }) => {
                         <input
                             type="text"
                             value={activationCode}
-                            onChange={(e) => setActivationCode(e.target.value)}
+                            onChange={(e) => {
+                                let val = e.target.value;
+                                // Regex to extract Tango ID from pasted SMS (e.g. "Trans ID: 123456")
+                                // Adjust regex as needed based on actual SMS format. Assuming alphanumeric.
+                                // Example: "Txn ID: 123ABC456" or "Ref: 987654"
+                                // User said: "tu extrait donc l ID tango"
+                                // Common Tango patterns: "Tango ID: XXXXX" or just matching a specific code pattern if pasted.
+                                // Simple heuristic: if len > 20 and contains "ID", try to find a sequence.
+                                if (val.length > 20) {
+                                    const match = val.match(/(?:ID|Ref|Trans|Code)[:\s]+([A-Z0-9]+)/i);
+                                    if (match && match[1]) {
+                                        val = match[1];
+                                    }
+                                }
+                                setActivationCode(val);
+                            }}
                             placeholder="Enter Activation Code"
                             className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-center tracking-widest font-mono uppercase"
                         />
@@ -68,7 +83,44 @@ const Activation = ({ onActivate }) => {
                     >
                         <Lock size={20} /> Activate Device
                     </button>
+
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                // Simple re-check or redirect logic
+                                window.location.reload();
+                            }}
+                            className="text-blue-400 text-sm hover:text-blue-300 underline"
+                        >
+                            Device already activated? Click here to refresh
+                        </button>
+                    </div>
                 </form>
+
+                {/* Pricing / Trial Section */}
+                <div className="mt-8 grid grid-cols-2 gap-4">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const response = await import('../services/api').then(m => m.deviceService.startTrial(deviceId));
+                                if (response.data.status === 'trial_active') {
+                                    onActivate();
+                                }
+                            } catch (err) {
+                                setError(err.response?.data?.error || 'Trial activation failed');
+                            }
+                        }}
+                        className="bg-slate-800 hover:bg-slate-700 p-4 rounded-xl border border-slate-700 text-center transition-all group"
+                    >
+                        <p className="font-bold text-white group-hover:text-blue-400">Free Trial</p>
+                        <p className="text-xs text-slate-500">3 Days access</p>
+                    </button>
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center opacity-80">
+                        <p className="font-bold text-white">Full Access</p>
+                        <p className="text-xs text-slate-500">10,000 FCFA / Year</p>
+                    </div>
+                </div>
 
                 <div className="pt-6 border-t border-slate-800/50 mt-2">
                     <p className="text-center text-slate-400 text-sm mb-4">Prefer the big screen experience?</p>
