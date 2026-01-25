@@ -19,20 +19,42 @@ const Activation = ({ onActivate }) => {
         e.preventDefault();
         setError('');
         try {
-            await activateDevice(activationCode);
-            onActivate();
+            const response = await activateDevice(activationCode);
+
+            // Auto-refresh on success
+            if (response) {
+                setTimeout(() => {
+                    onActivate();
+                }, 500);
+            }
         } catch (err) {
             const errorMsg = err.response?.data?.error || '';
+            const successMsg = err.response?.data?.message || '';
 
-            if (errorMsg.includes('already used') || errorMsg.includes('already active')) {
+            // Handle "Welcome back" case (code reactivated on same device)
+            if (successMsg && successMsg.includes('Welcome back')) {
+                setTimeout(() => {
+                    onActivate();
+                }, 500);
+                return;
+            }
+
+            if (errorMsg.includes('already active on another device')) {
                 setError(
                     <span>
-                        This code is already active on a device.<br />
+                        This code is active on a different device.<br />
+                        Contact support to transfer your license.
+                    </span>
+                );
+            } else if (errorMsg.includes('already used')) {
+                setError(
+                    <span>
+                        This code was already used.<br />
                         <button
                             onClick={() => window.location.reload()}
                             className="underline text-red-200 hover:text-white mt-1"
                         >
-                            Click to refresh your session
+                            Click to check your license status
                         </button>
                     </span>
                 );
