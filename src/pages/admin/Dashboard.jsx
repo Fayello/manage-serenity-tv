@@ -44,6 +44,13 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
+    const handleTabChange = (tab) => {
+        if (tab === activeTab) return;
+        setLoading(true);
+        setData([]);
+        setActiveTab(tab);
+    };
+
     // Modern UI State
     const [actionModal, setActionModal] = useState({
         isOpen: false,
@@ -249,17 +256,17 @@ const AdminDashboard = () => {
                     </div>
 
                     <nav className="flex-1 space-y-2">
-                        <NavItem active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} icon={BarChart3} label="Smart Metrics" onNavItemClick={() => setIsMenuOpen(false)} />
-                        <NavItem active={activeTab === 'content'} onClick={() => setActiveTab('content')} icon={Film} label="Content Manager" onNavItemClick={() => setIsMenuOpen(false)} />
+                        <NavItem active={activeTab === 'analytics'} onClick={() => handleTabChange('analytics')} icon={BarChart3} label="Smart Metrics" onNavItemClick={() => setIsMenuOpen(false)} />
+                        <NavItem active={activeTab === 'content'} onClick={() => handleTabChange('content')} icon={Film} label="Content Manager" onNavItemClick={() => setIsMenuOpen(false)} />
                         <div className="pt-4 mt-4 border-t border-white/10">
-                            <NavItem active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} icon={CreditCard} label="Payments" badge={stats.pending_payments > 0 ? stats.pending_payments : null} onNavItemClick={() => setIsMenuOpen(false)} />
-                            <NavItem active={activeTab === 'codes'} onClick={() => setActiveTab('codes')} icon={Key} label="Activation Codes" onNavItemClick={() => setIsMenuOpen(false)} />
-                            <NavItem active={activeTab === 'licenses'} onClick={() => setActiveTab('licenses')} icon={Smartphone} label="User Licenses" onNavItemClick={() => setIsMenuOpen(false)} />
-                            <NavItem active={activeTab === 'fleet'} onClick={() => setActiveTab('fleet')} icon={DeviceIcon} label="Device Fleet" onNavItemClick={() => setIsMenuOpen(false)} />
-                            <NavItem active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={Shield} label="Security Logs" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'payments'} onClick={() => handleTabChange('payments')} icon={CreditCard} label="Payments" badge={stats.pending_payments > 0 ? stats.pending_payments : null} onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'codes'} onClick={() => handleTabChange('codes')} icon={Key} label="Activation Codes" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'licenses'} onClick={() => handleTabChange('licenses')} icon={Smartphone} label="User Licenses" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'fleet'} onClick={() => handleTabChange('fleet')} icon={DeviceIcon} label="Device Fleet" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'audit'} onClick={() => handleTabChange('audit')} icon={Shield} label="Security Logs" onNavItemClick={() => setIsMenuOpen(false)} />
                         </div>
                         <div className="pt-4 mt-4 border-t border-white/10">
-                            <NavItem active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings} label="Settings" onNavItemClick={() => setIsMenuOpen(false)} />
+                            <NavItem active={activeTab === 'settings'} onClick={() => handleTabChange('settings')} icon={Settings} label="Settings" onNavItemClick={() => setIsMenuOpen(false)} />
                         </div>
                     </nav>
 
