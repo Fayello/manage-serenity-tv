@@ -462,6 +462,7 @@ const StatusBadge = ({ status }) => {
 const AnalyticsView = ({ data }) => {
     const [subTab, setSubTab] = useState('daily');
     const [metricMode, setMetricMode] = useState('views'); // 'views' | 'duration'
+    const [regionMode, setRegionMode] = useState('country'); // 'country' | 'city'
     const recentActivity = data.recent_activity || [];
 
     const getStatsForTab = () => {
@@ -570,16 +571,27 @@ const AnalyticsView = ({ data }) => {
                 </div>
 
                 {/* Top Countries Card (New) */}
+                {/* Top Regions & Cities Card */}
                 <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 h-fit">
-                    <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                        <span className="text-2xl">🌍</span> Top Regions
-                    </h3>
-                    <div className="space-y-4">
-                        {(data.top_countries || []).map((c, i) => (
+                    <div className="flex items-center justify-between mb-8">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                            <span className="text-2xl">🌍</span> Locations
+                        </h3>
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 text-[10px] font-bold">
+                            <button onClick={() => setRegionMode('country')} className={clsx("px-3 py-1 rounded-lg transition-all", regionMode === 'country' ? "bg-blue-600 text-white" : "text-gray-500 hover:text-gray-300")}>REGIONS</button>
+                            <button onClick={() => setRegionMode('city')} className={clsx("px-3 py-1 rounded-lg transition-all", regionMode === 'city' ? "bg-purple-600 text-white" : "text-gray-500 hover:text-gray-300")}>CITIES</button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        {(regionMode === 'country' ? data.top_countries : data.top_cities || []).map((c, i) => (
                             <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-black/20 hover:bg-white/5 transition-colors group">
                                 <div className="flex items-center gap-3">
                                     <span className="text-gray-500 font-mono text-xs">#{i + 1}</span>
-                                    <span className="font-bold text-sm">{c.country}</span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-sm text-white">{regionMode === 'country' ? c.country : c.city}</span>
+                                        {regionMode === 'city' && <span className="text-[9px] text-gray-500 uppercase">{c.country}</span>}
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <p className="font-bold text-xs text-blue-400">{c.views} Visits</p>
@@ -587,9 +599,90 @@ const AnalyticsView = ({ data }) => {
                                 </div>
                             </div>
                         ))}
-                        {(data.top_countries || []).length === 0 && (
+                        {(regionMode === 'country' ? data.top_countries : data.top_cities || []).length === 0 && (
                             <div className="text-center text-gray-600 text-xs py-8">No location data</div>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Insights Row (New) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Device Breakdown */}
+                <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 h-full">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                        <Smartphone size={18} className="text-blue-500" />
+                        Device Mix
+                    </h3>
+                    <div className="space-y-4 mt-4">
+                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                            <span className="text-xs font-bold text-gray-400">TVs & Consoles</span>
+                            <span className="text-sm font-black text-white">{data.recent_activity?.filter(a => a.device_type === 'TV').length || 0}%</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                            <span className="text-xs font-bold text-gray-400">Mobile & Tablets</span>
+                            <span className="text-sm font-black text-white">{data.recent_activity?.filter(a => a.device_type === 'Mobile').length || 0}%</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                            <span className="text-xs font-bold text-gray-400">Desktop / Web</span>
+                            <span className="text-sm font-black text-white">{data.recent_activity?.filter(a => a.device_type === 'Desktop').length || 0}%</span>
+                        </div>
+                        <p className="text-[9px] text-gray-600 text-center mt-2">Based on active session sample</p>
+                    </div>
+                </div>
+
+                {/* Content Categories */}
+                <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 h-full">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                        <Film size={18} className="text-purple-500" />
+                        Top Genres
+                    </h3>
+                    <div className="space-y-3 mt-4">
+                        {(data.category_stats || []).slice(0, 4).map((cat, i) => (
+                            <div key={i} className="group">
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="font-bold text-gray-300">{cat.channel__category}</span>
+                                    <span className="text-blue-400 font-mono">{cat.views}</span>
+                                </div>
+                                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div style={{ width: `${Math.min((cat.views / (data.category_stats[0]?.views || 1)) * 100, 100)}%` }} className="h-full bg-purple-600 rounded-full" />
+                                </div>
+                            </div>
+                        ))}
+                        {(data.category_stats || []).length === 0 && (
+                            <div className="text-center text-gray-600 text-xs py-8">No category data</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Peak Hours */}
+                <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 h-full">
+                    <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                        <Clock size={18} className="text-green-500" />
+                        Peak Activity
+                    </h3>
+                    <div className="flex items-end justify-between h-32 mt-4 space-x-1">
+                        {Array.from({ length: 24 }).map((_, h) => {
+                            const val = (data.peak_hours || []).find(p => p.hour === h)?.views || 0;
+                            const max = Math.max(...(data.peak_hours || []).map(p => p.views), 1);
+                            const height = Math.max((val / max) * 100, 5); // Min height 5%
+                            return (
+                                <div key={h} className="flex-1 flex flex-col justify-end group relative">
+                                    <div
+                                        style={{ height: `${height}%` }}
+                                        className={clsx("w-full rounded-sm min-h-[4px] transition-all", val > 0 ? "bg-green-500/80 hover:bg-green-400" : "bg-white/5")}
+                                    />
+                                    {val > 0 && <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-[9px] font-bold px-2 py-1 rounded border border-white/20 z-50 whitespace-nowrap">
+                                        {h}:00 - {val} Hits
+                                    </div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="flex justify-between text-[9px] text-gray-500 font-mono mt-2 font-bold tracking-widest">
+                        <span>00:00</span>
+                        <span>12:00</span>
+                        <span>23:00</span>
                     </div>
                 </div>
             </div>
