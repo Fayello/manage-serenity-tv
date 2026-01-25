@@ -362,7 +362,9 @@ const AdminDashboard = () => {
                                                                 <>
                                                                     <td className="p-6 font-mono text-white font-bold">{item.code}</td>
                                                                     <td className="p-6 text-gray-400 text-sm">{item.plan_duration_days} Days</td>
-                                                                    <td className="p-6 text-xs font-mono text-gray-500 uppercase">{item.payment_reference || 'MANUAL'}</td>
+                                                                    <td className="p-6 text-xs font-mono text-gray-500 uppercase">
+                                                                        {item.client_reference ? <span className="text-white bg-blue-600/20 px-2 py-1 rounded border border-blue-500/30">{item.client_reference}</span> : (item.payment_reference || 'MANUAL')}
+                                                                    </td>
                                                                     <td className="p-6"><StatusBadge status={item.status} /></td>
                                                                     <td className="p-6 text-right">
                                                                         {item.status === 'UNUSED' && <button onClick={() => handleRevokeCode(item.id)} className="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all"><Trash2 size={16} /></button>}
