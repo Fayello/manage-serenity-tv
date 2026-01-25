@@ -461,19 +461,16 @@ const StatusBadge = ({ status }) => {
 
 const AnalyticsView = ({ data }) => {
     const [subTab, setSubTab] = useState('daily');
+    const [metricMode, setMetricMode] = useState('views'); // 'views' | 'duration'
     const recentActivity = data.recent_activity || [];
 
     const getStatsForTab = () => {
-        switch (subTab) {
-            case 'weekly': return data.top_weekly || [];
-            case 'monthly': return data.top_monthly || [];
-            case 'yearly': return data.top_yearly || [];
-            default: return data.top_daily || [];
-        }
+        const key = `top_${subTab}_${metricMode}`;
+        return data[key] || [];
     };
 
     const currentStats = getStatsForTab();
-    const maxDuration = Math.max(...currentStats.map(c => c.total_duration), 1);
+    const maxVal = Math.max(...currentStats.map(c => metricMode === 'views' ? c.views : c.total_duration), 1);
 
     const relativeTime = (dateStr) => {
         const date = new Date(dateStr);
@@ -495,54 +492,105 @@ const AnalyticsView = ({ data }) => {
 
     return (
         <div className="space-y-12">
-            {/* Top Content */}
-            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                        <TrendingUp size={20} className="text-blue-500" />
-                        Channel Performance
-                    </h3>
-                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                        {['daily', 'weekly', 'monthly', 'yearly'].map((period) => (
-                            <button
-                                key={period}
-                                onClick={() => setSubTab(period)}
-                                className={clsx(
-                                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                                    subTab === period ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-gray-500 hover:text-gray-300"
-                                )}
-                            >
-                                {period}
-                            </button>
-                        ))}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Channel Performance (Flexible) - Spans 2 cols */}
+                <div className="lg:col-span-2 bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                        <div className="flex items-center gap-4">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <TrendingUp size={20} className="text-blue-500" />
+                                Channel Performance
+                            </h3>
+                            {/* Metric Toggle */}
+                            <div className="bg-black/40 p-1 rounded-xl border border-white/5 flex text-[10px] font-bold">
+                                <button
+                                    onClick={() => setMetricMode('views')}
+                                    className={clsx("px-3 py-1 rounded-lg transition-all", metricMode === 'views' ? "bg-blue-600 text-white" : "text-gray-500 hover:text-gray-300")}
+                                >
+                                    VIEWS
+                                </button>
+                                <button
+                                    onClick={() => setMetricMode('duration')}
+                                    className={clsx("px-3 py-1 rounded-lg transition-all", metricMode === 'duration' ? "bg-indigo-600 text-white" : "text-gray-500 hover:text-gray-300")}
+                                >
+                                    TIME
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                            {['daily', 'weekly', 'monthly', 'yearly'].map((period) => (
+                                <button
+                                    key={period}
+                                    onClick={() => setSubTab(period)}
+                                    className={clsx(
+                                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                        subTab === period ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
+                                    )}
+                                >
+                                    {period}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {currentStats.slice(0, 10).map((channel, idx) => {
+                            const val = metricMode === 'views' ? channel.views : channel.total_duration;
+                            const percent = (val / maxVal) * 100;
+                            return (
+                                <div key={idx} className="space-y-2 group">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-bold flex items-center gap-2">
+                                            <span className={clsx("font-mono text-xs w-6 h-6 flex items-center justify-center rounded-full bg-white/5", metricMode === 'views' ? "text-blue-400" : "text-indigo-400")}>{idx + 1}</span>
+                                            {channel.channel__name}
+                                        </span>
+                                        <div className="flex items-center gap-4">
+                                            <span className={clsx("font-mono text-[9px] uppercase tracking-tighter", metricMode === 'views' ? "text-white font-bold" : "text-gray-500")}>{channel.views} CONNECTIONS</span>
+                                            <span className={clsx("font-mono text-[10px]", metricMode === 'duration' ? "text-indigo-400 font-bold" : "text-blue-400/60")}>{formatDuration(channel.total_duration)} WATCHED</span>
+                                        </div>
+                                    </div>
+                                    <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/[0.02]">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${percent}%` }}
+                                            className={clsx(
+                                                "h-full rounded-full shadow-[0_0_15px_rgba(0,0,0,0.3)] transition-all duration-1000",
+                                                metricMode === 'views' ? "bg-gradient-to-r from-blue-600 to-cyan-500" : "bg-gradient-to-r from-indigo-600 to-purple-500"
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {currentStats.length === 0 && (
+                            <div className="py-10 text-center text-gray-600 font-mono text-xs tracking-[0.2em] uppercase">No metrics available</div>
+                        )}
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    {currentStats.slice(0, 5).map((channel, idx) => (
-                        <div key={idx} className="space-y-2 group">
-                            <div className="flex justify-between text-sm">
-                                <span className="font-bold flex items-center gap-2">
-                                    <span className="text-blue-500/50 font-mono text-xs">{idx + 1}</span>
-                                    {channel.channel__name}
-                                </span>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-gray-500 font-mono text-[9px] uppercase tracking-tighter">{channel.views} CONNECTIONS</span>
-                                    <span className="text-blue-400 font-mono text-[10px] font-bold">{formatDuration(channel.total_duration)} WATCHED</span>
+                {/* Top Countries Card (New) */}
+                <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 h-fit">
+                    <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+                        <span className="text-2xl">🌍</span> Top Regions
+                    </h3>
+                    <div className="space-y-4">
+                        {(data.top_countries || []).map((c, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-black/20 hover:bg-white/5 transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-gray-500 font-mono text-xs">#{i + 1}</span>
+                                    <span className="font-bold text-sm">{c.country}</span>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-bold text-xs text-blue-400">{c.views} Visits</p>
+                                    <p className="text-[9px] text-gray-500 font-mono">{formatDuration(c.total_duration)}</p>
                                 </div>
                             </div>
-                            <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/[0.02]">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(channel.total_duration / maxDuration) * 100}%` }}
-                                    className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all duration-1000 group-hover:from-blue-500 group-hover:to-indigo-400"
-                                />
-                            </div>
-                        </div>
-                    ))}
-                    {currentStats.length === 0 && (
-                        <div className="py-10 text-center text-gray-600 font-mono text-xs tracking-[0.2em] uppercase">No metrics available for this period</div>
-                    )}
+                        ))}
+                        {(data.top_countries || []).length === 0 && (
+                            <div className="text-center text-gray-600 text-xs py-8">No location data</div>
+                        )}
+                    </div>
                 </div>
             </div>
 
