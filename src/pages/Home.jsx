@@ -1,7 +1,50 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { channelService } from '../services/api';
+import { channelService, deviceService, getDeviceId } from '../services/api'; // Added deviceService/getDeviceId
 import VideoPlayer from '../components/VideoPlayer';
-import { Play, LogOut, Menu, Search, X } from 'lucide-react';
+import { Play, LogOut, Menu, Search, X, Clock } from 'lucide-react'; // Added Clock
+
+const SubscriptionTimer = () => {
+    const [expiry, setExpiry] = useState(null);
+    const [status, setStatus] = useState('Checking...');
+
+    useEffect(() => {
+        const check = async () => {
+            try {
+                // We need device ID to check status. Usually we'd store the license info 
+                // in local state after login, but let's re-fetch to be safe/live.
+                // Assuming we can get device ID easily or call a status endpoint that implies current device.
+                // The api.js 'deviceService.checkStatus' requires fingerprint.
+                const fingerprint = await import('../utils/device').then(m => m.getDeviceId());
+                const res = await deviceService.checkStatus(fingerprint);
+
+                if (res.data.status === 'ACTIVE' || res.data.status === 'TRIAL') {
+                    setExpiry(new Date(res.data.expiry || res.data.trial_expiry));
+                    setStatus(res.data.status === 'TRIAL' ? 'Trial Active' : 'Active');
+                } else {
+                    setStatus('Inactive');
+                }
+            } catch (e) {
+                setStatus('Unknown');
+            }
+        };
+        check();
+    }, []);
+
+    if (!expiry) return <span>{status}</span>;
+
+    const daysLeft = Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24));
+
+    return (
+        <div>
+            <div className="flex items-center gap-2 mb-1">
+                <Clock size={12} className={daysLeft < 3 ? "text-red-400" : "text-green-400"} />
+                <span className={daysLeft < 3 ? "text-red-400 font-bold" : "text-green-400"}>
+                    {daysLeft} Days Left
+                </span>
+            </div>
+            <span className="text-[10px] opacity-60 block">{expiry.toLocaleDateString()}</span>
+        </div>
+    );
+};
 
 const Home = () => {
     const [channels, setChannels] = useState([]);
@@ -192,6 +235,12 @@ const Home = () => {
                 </div>
 
                 <div className="p-4 border-t border-slate-800">
+                    {/* Subscription Status */}
+                    <div className="mb-4 bg-slate-800/50 rounded-lg p-3 text-xs text-slate-400">
+                        <p className="font-bold text-slate-300 mb-1">Subscription:</p>
+                        <SubscriptionTimer />
+                    </div>
+
                     <button onClick={handleLogout} className="flex items-center gap-3 text-red-400 hover:text-red-300 w-full p-2 rounded-lg hover:bg-slate-800 transition-colors">
                         <LogOut size={20} />
                         {sidebarOpen && <span>Reload / Re-Auth</span>}

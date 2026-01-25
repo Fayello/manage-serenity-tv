@@ -22,7 +22,25 @@ const Activation = ({ onActivate }) => {
             await activateDevice(activationCode);
             onActivate();
         } catch (err) {
-            setError(err.response?.data?.error || 'Invalid activation code. Please try again.');
+            const errorMsg = err.response?.data?.error || '';
+
+            if (errorMsg.includes('already used') || errorMsg.includes('already active')) {
+                setError(
+                    <span>
+                        This code is already active on a device.<br />
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="underline text-red-200 hover:text-white mt-1"
+                        >
+                            Click to refresh your session
+                        </button>
+                    </span>
+                );
+            } else if (errorMsg.includes('expired')) {
+                setError('This code has expired. Please purchase a new one.');
+            } else {
+                setError(errorMsg || 'Invalid activation code. Please try again.');
+            }
         }
     };
 
