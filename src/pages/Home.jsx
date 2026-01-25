@@ -197,29 +197,31 @@ const Home = () => {
 
             {/* Sidebar */}
             <div className={`
-                fixed md:relative inset-y-0 left-0 h-full bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-50 shadow-2xl md:shadow-none
-                ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full w-64 md:translate-x-0 md:w-16'}
+                fixed md:relative inset-y-0 left-0 h-full bg-[#0F111A] border-r border-white/5 flex flex-col transition-all duration-300 z-50 shadow-2xl md:shadow-none
+                ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full w-64 md:translate-x-0 md:w-20'}
             `}>
-                <div className="p-4 flex items-center justify-between">
+                <div className="p-4 flex items-center justify-between h-16">
                     <div className={`${!sidebarOpen && 'md:hidden'} flex items-center gap-2`}>
                         <h1 className="font-bold text-xl text-blue-500 tracking-wider">SERENITY</h1>
                     </div>
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-slate-800 rounded-lg hidden md:block">
+                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-white/5 rounded-lg hidden md:block text-slate-400">
                         <Menu size={20} />
                     </button>
                     {/* Mobile Close Button */}
-                    <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-slate-800 rounded-lg md:hidden ml-auto">
+                    <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-white/5 rounded-lg md:hidden ml-auto text-slate-400">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="px-3 mb-4">
-                    <div className="flex items-center bg-slate-800 rounded-lg overflow-hidden">
-                        <Search size={18} className="ml-3 text-slate-500 min-w-[18px]" />
+                <div className="px-3 mb-6">
+                    <div className="flex items-center bg-white/5 rounded-xl overflow-hidden border border-white/5">
+                        <div className="w-12 h-10 flex items-center justify-center shrink-0">
+                            <Search size={18} className="text-slate-500" />
+                        </div>
                         <input
                             type="text"
                             placeholder="Search..."
-                            className={`bg-transparent border-none focus:outline-none text-sm p-3 w-full text-slate-300 placeholder:text-slate-600 ${!sidebarOpen && 'md:w-0 md:p-0 md:opacity-0'} transition-all`}
+                            className={`bg-transparent border-none focus:outline-none text-sm h-10 w-full text-slate-300 placeholder:text-slate-600 ${!sidebarOpen && 'md:w-0 md:p-0 md:opacity-0'} transition-all`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -227,11 +229,11 @@ const Home = () => {
                 </div>
 
                 {/* Country Filter */}
-                <div className={`px-3 mb-2 ${!sidebarOpen && 'md:hidden'}`}>
+                <div className={`px-3 mb-4 ${!sidebarOpen && 'md:hidden'}`}>
                     <select
                         value={activeCountry}
                         onChange={(e) => setActiveCountry(e.target.value)}
-                        className="w-full bg-slate-800 text-slate-300 text-sm rounded-lg p-2 border-none focus:ring-1 focus:ring-blue-500 outline-none"
+                        className="w-full bg-white/5 text-slate-300 text-sm rounded-xl p-3 border border-white/5 focus:ring-1 focus:ring-blue-500 outline-none"
                     >
                         <option value="All">All Countries</option>
                         {countries.map(c => (
@@ -240,34 +242,38 @@ const Home = () => {
                     </select>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-1">
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-2 no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
                     {Object.keys(groups).sort().map(group => (
                         <button
                             key={group}
                             onClick={() => { setActiveGroup(group); if (window.innerWidth < 768) setSidebarOpen(false); }}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all truncate flex items-center gap-3
+                            className={`w-full text-left p-3 rounded-xl text-sm transition-all truncate flex items-center gap-3 group
                                 ${activeGroup === group
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
                         >
-                            <span className="shrink-0 font-bold bg-slate-800 w-6 h-6 flex items-center justify-center rounded text-[10px] uppercase text-slate-500 group-hover:text-blue-400">
-                                {group.charAt(0)}
-                            </span>
-                            <span className={`${!sidebarOpen && 'md:hidden'}`}>{group}</span>
+                            <div className={`shrink-0 font-bold w-10 h-10 flex items-center justify-center rounded-lg transition-colors
+                                ${activeGroup === group ? 'bg-white/20' : 'bg-white/5 group-hover:bg-white/10'}`}>
+                                <span className="text-xs uppercase">{group.charAt(0)}</span>
+                            </div>
+                            <span className={`${!sidebarOpen && 'md:hidden'} font-medium`}>{group}</span>
                         </button>
                     ))}
                 </div>
 
-                <div className="p-4 border-t border-slate-800">
+                <div className="p-4 border-t border-white/5 bg-white/[0.02]">
                     {/* Subscription Status */}
-                    <div className={`mb-4 bg-slate-800/50 rounded-lg p-3 text-xs text-slate-400 ${!sidebarOpen && 'md:hidden'}`}>
-                        <p className="font-bold text-slate-300 mb-1">Subscription:</p>
+                    <div className={`mb-4 bg-white/5 rounded-xl p-3 text-xs text-slate-400 ${!sidebarOpen && 'md:hidden'}`}>
+                        <p className="font-bold text-slate-300 mb-2 flex items-center gap-2">
+                            License Status
+                        </p>
                         <SubscriptionTimer />
                     </div>
 
-                    <button onClick={handleLogout} className="flex items-center gap-3 text-red-400 hover:text-red-300 w-full p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                    <button onClick={handleLogout} className={`flex items-center gap-3 text-red-400 hover:text-red-300 w-full p-3 rounded-xl hover:bg-red-500/10 transition-colors ${!sidebarOpen && 'md:justify-center'}`}>
                         <LogOut size={20} />
-                        <span className={`${!sidebarOpen && 'md:hidden'}`}>Reload / Re-Auth</span>
+                        <span className={`${!sidebarOpen && 'md:hidden'} font-bold text-sm`}>Re-Authenticate</span>
                     </button>
                 </div>
             </div>
