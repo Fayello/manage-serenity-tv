@@ -453,20 +453,97 @@ const StatusBadge = ({ status }) => {
 };
 
 const AnalyticsView = ({ data }) => {
-    const topChannels = data.top_channels || [];
+    const topChannels = data.top_content || [];
+    const recentActivity = data.recent_activity || [];
     const maxViews = Math.max(...topChannels.map(c => c.views), 1);
+
+    const relativeTime = (dateStr) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return 'Just now';
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return date.toLocaleDateString();
+    };
+
     return (
-        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 mb-12">
-            <h3 className="text-xl font-bold mb-6">Top Performing Content</h3>
-            <div className="space-y-4">
-                {topChannels.map((channel, idx) => (
-                    <div key={idx} className="space-y-2">
-                        <div className="flex justify-between text-sm"><span className="font-bold">{idx + 1}. {channel.channel__name}</span><span className="text-gray-400">{channel.views} views</span></div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(channel.views / maxViews) * 100}%` }} className="h-full bg-blue-600 rounded-full" />
+        <div className="space-y-12">
+            {/* Top Content */}
+            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                    <TrendingUp size={20} className="text-blue-500" />
+                    Top Performing Content
+                </h3>
+                <div className="space-y-4">
+                    {topChannels.slice(0, 5).map((channel, idx) => (
+                        <div key={idx} className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="font-bold">{idx + 1}. {channel.channel__name}</span>
+                                <span className="text-gray-400 font-mono text-[10px]">{channel.views} VIEWS</span>
+                            </div>
+                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                                <motion.div initial={{ width: 0 }} animate={{ width: `${(channel.views / maxViews) * 100}%` }} className="h-full bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+            </div>
+
+            {/* Live Activity Feed */}
+            <div className="bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+                <div className="p-8 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                    <h3 className="font-bold text-xl flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                        Live Audience Activity
+                    </h3>
+                    <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest bg-white/5 px-3 py-1 rounded-full">Real-time Stream</span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-white/[0.02] text-gray-500 text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                                <th className="p-6">Time</th>
+                                <th className="p-6">Viewer / Client</th>
+                                <th className="p-6">Content</th>
+                                <th className="p-6">Location</th>
+                                <th className="p-6">Device</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {recentActivity.map((event) => (
+                                <tr key={event.id} className="hover:bg-white/[0.01] transition-colors">
+                                    <td className="p-6 text-xs font-mono text-blue-400 whitespace-nowrap">{relativeTime(event.time)}</td>
+                                    <td className="p-6">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-white">{event.reference}</span>
+                                            <span className="text-[10px] text-gray-600 font-mono">{event.ip}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                                                <Film size={14} className="text-blue-500" />
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-300">{event.channel}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-6">
+                                        <span className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-bold text-gray-400">
+                                            {event.country}
+                                        </span>
+                                    </td>
+                                    <td className="p-6">
+                                        <span className="text-[10px] text-gray-500 font-mono uppercase italic">{event.device_model}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {recentActivity.length === 0 && (
+                        <div className="p-20 text-center text-gray-600 font-mono text-sm tracking-widest">AWAITING VIEWER ACTIVITY...</div>
+                    )}
+                </div>
             </div>
         </div>
     );
