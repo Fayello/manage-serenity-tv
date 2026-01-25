@@ -11,11 +11,8 @@ const SubscriptionTimer = () => {
     useEffect(() => {
         const check = async () => {
             try {
-                // We need device ID to check status. Usually we'd store the license info 
-                // in local state after login, but let's re-fetch to be safe/live.
-                // Assuming we can get device ID easily or call a status endpoint that implies current device.
-                // The api.js 'deviceService.checkStatus' requires fingerprint.
-                const fingerprint = await import('../utils/device').then(m => m.getDeviceId());
+                // Use static import
+                const fingerprint = await getDeviceId();
                 const res = await deviceService.checkStatus(fingerprint);
 
                 if (res.data.status === 'ACTIVE' || res.data.status === 'TRIAL') {
@@ -25,6 +22,7 @@ const SubscriptionTimer = () => {
                     setStatus('Inactive');
                 }
             } catch (e) {
+                console.error("Subscription check failed", e);
                 setStatus('Unknown');
             }
         };
