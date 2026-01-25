@@ -26,6 +26,7 @@ import {
 import clsx from 'clsx';
 import ActionModal from '../../components/ActionModal';
 import ActivationModal from '../../components/ActivationModal';
+import AdminUsers from './AdminUsers';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -320,10 +321,8 @@ const AdminDashboard = () => {
                     {activeTab === 'analytics' && <AnalyticsView data={data} />}
                     {activeTab === 'content' && <ContentManager channels={Array.isArray(data) ? data : []} onDelete={handleDeleteChannel} />}
                     {activeTab === 'settings' && (
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl p-12 text-center">
-                            <Settings size={48} className="mx-auto mb-4 text-gray-600 opacity-20" />
-                            <h3 className="text-xl font-bold text-gray-500">Settings Coming Soon</h3>
-                            <p className="text-gray-600 mt-2">The management of administrator accounts is being finalized.</p>
+                        <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 border-white/10">
+                            <AdminUsers />
                         </div>
                     )}
 
