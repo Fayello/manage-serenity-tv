@@ -121,7 +121,7 @@ export const channelService = {
         return await api.get('/channels/countries/');
     },
     recordView: async (channelId, deviceHash) => {
-        return await api.post('/analytics/view/', { channel_id: channelId, device_hash: deviceHash });
+        return await api.post('/analytics/record', { channel_id: channelId, device_hash: deviceHash });
     }
 };
 
