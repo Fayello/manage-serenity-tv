@@ -167,6 +167,13 @@ const Home = () => {
         window.location.reload();
     };
 
+    // Responsive: Auto-close sidebar on mobile on mount
+    useEffect(() => {
+        if (window.innerWidth < 768) {
+            setSidebarOpen(false);
+        }
+    }, []);
+
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
@@ -177,13 +184,6 @@ const Home = () => {
             </div>
         );
     }
-
-    // Responsive: Auto-close sidebar on mobile on mount
-    useEffect(() => {
-        if (window.innerWidth < 768) {
-            setSidebarOpen(false);
-        }
-    }, []);
 
     return (
         <div className="flex h-screen bg-slate-950 overflow-hidden text-slate-200 font-sans relative">
