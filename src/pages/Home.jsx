@@ -160,6 +160,21 @@ const Home = () => {
         setSelectedChannel(channel);
     };
 
+    // Analytics: Record View when channel changes
+    useEffect(() => {
+        if (selectedChannel) {
+            const record = async () => {
+                try {
+                    const fingerprint = await getDeviceId();
+                    await channelService.recordView(selectedChannel.id, fingerprint);
+                } catch (e) {
+                    console.error("Failed to record view", e);
+                }
+            };
+            record();
+        }
+    }, [selectedChannel]);
+
     const handleLogout = () => {
         // "Deactivate" locally just clears session for user perception which triggers re-check
         // In real world, we might want to also call an API to clearing specific session if we had one
