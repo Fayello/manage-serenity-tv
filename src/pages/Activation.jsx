@@ -125,8 +125,9 @@ const Activation = ({ onActivate }) => {
                 <div className="pt-6 border-t border-slate-800/50 mt-2">
                     <p className="text-center text-slate-400 text-sm mb-4">Prefer the big screen experience?</p>
                     <a
-                        href="/Serenity_TV.apk"
-                        download
+                        href="https://serenity-tv.vercel.app/Serenity_TV.apk"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-700"
                     >
                         <Tv size={18} className="text-blue-400" /> Download Android App
