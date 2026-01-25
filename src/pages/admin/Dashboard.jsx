@@ -155,7 +155,7 @@ const AdminDashboard = () => {
             onConfirm: async () => {
                 setActionLoading(true);
                 try {
-                    await api.post('/admin/codes/', { plan_duration_days: 365 });
+                    await api.post('/admin/codes/generate/', { duration: 365 });
                     showToast("New activation code generated");
                     handleRefresh();
                     setActionModal(prev => ({ ...prev, isOpen: false }));
