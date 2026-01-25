@@ -38,6 +38,8 @@ const Activation = ({ onActivate }) => {
                 );
             } else if (errorMsg.includes('expired')) {
                 setError('This code has expired. Please purchase a new one.');
+            } else if (errorMsg.includes('revoked')) {
+                setError('This code has been revoked by an administrator. Access is denied.');
             } else {
                 setError(errorMsg || 'Invalid activation code. Please try again.');
             }
