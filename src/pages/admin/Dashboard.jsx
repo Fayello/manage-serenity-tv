@@ -539,6 +539,36 @@ const AnalyticsView = ({ data }) => {
                 </div>
             </div>
 
+            {/* Top Viewers */}
+            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+                <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+                    <Users size={20} className="text-indigo-400" />
+                    Top Viewers
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {(data.top_viewers || []).slice(0, 6).map((viewer, idx) => (
+                        <div key={idx} className="bg-black/20 p-6 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-indigo-500/30 transition-all">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold">
+                                    {idx + 1}
+                                </div>
+                                <div>
+                                    <div className="font-bold text-white group-hover:text-indigo-400 transition-colors">{viewer.reference}</div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest">{viewer.views} SESSIONS</div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-sm font-bold text-indigo-400">{formatDuration(viewer.total_duration)}</div>
+                                <div className="text-[9px] text-gray-600 font-mono">WATCHED</div>
+                            </div>
+                        </div>
+                    ))}
+                    {(data.top_viewers || []).length === 0 && (
+                        <div className="col-span-full py-10 text-center text-gray-600 font-mono text-xs tracking-[0.2em] uppercase">No viewer data yet</div>
+                    )}
+                </div>
+            </div>
+
             {/* Live Activity Feed */}
             <div className="bg-white/5 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
                 <div className="p-8 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
