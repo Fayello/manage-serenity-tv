@@ -1,4 +1,6 @@
-import { channelService, deviceService, getDeviceId } from '../services/api'; // Added deviceService/getDeviceId
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { channelService, deviceService } from '../services/api';
+import { getDeviceId } from '../utils/device';
 import VideoPlayer from '../components/VideoPlayer';
 import { Play, LogOut, Menu, Search, X, Clock } from 'lucide-react'; // Added Clock
 
