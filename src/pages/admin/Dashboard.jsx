@@ -453,9 +453,20 @@ const StatusBadge = ({ status }) => {
 };
 
 const AnalyticsView = ({ data }) => {
-    const topChannels = data.top_content || [];
+    const [subTab, setSubTab] = useState('daily');
     const recentActivity = data.recent_activity || [];
-    const maxViews = Math.max(...topChannels.map(c => c.views), 1);
+
+    const getStatsForTab = () => {
+        switch (subTab) {
+            case 'weekly': return data.top_weekly || [];
+            case 'monthly': return data.top_monthly || [];
+            case 'yearly': return data.top_yearly || [];
+            default: return data.top_daily || [];
+        }
+    };
+
+    const currentStats = getStatsForTab();
+    const maxDuration = Math.max(...currentStats.map(c => c.total_duration), 1);
 
     const relativeTime = (dateStr) => {
         const date = new Date(dateStr);
@@ -467,26 +478,64 @@ const AnalyticsView = ({ data }) => {
         return date.toLocaleDateString();
     };
 
+    const formatDuration = (mins) => {
+        if (!mins) return "0m";
+        if (mins < 60) return `${mins}m`;
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return `${h}h ${m}m`;
+    };
+
     return (
         <div className="space-y-12">
             {/* Top Content */}
             <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <TrendingUp size={20} className="text-blue-500" />
-                    Top Performing Content
-                </h3>
-                <div className="space-y-4">
-                    {topChannels.slice(0, 5).map((channel, idx) => (
-                        <div key={idx} className="space-y-2">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                        <TrendingUp size={20} className="text-blue-500" />
+                        Channel Performance
+                    </h3>
+                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                        {['daily', 'weekly', 'monthly', 'yearly'].map((period) => (
+                            <button
+                                key={period}
+                                onClick={() => setSubTab(period)}
+                                className={clsx(
+                                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                    subTab === period ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-gray-500 hover:text-gray-300"
+                                )}
+                            >
+                                {period}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    {currentStats.slice(0, 5).map((channel, idx) => (
+                        <div key={idx} className="space-y-2 group">
                             <div className="flex justify-between text-sm">
-                                <span className="font-bold">{idx + 1}. {channel.channel__name}</span>
-                                <span className="text-gray-400 font-mono text-[10px]">{channel.views} VIEWS</span>
+                                <span className="font-bold flex items-center gap-2">
+                                    <span className="text-blue-500/50 font-mono text-xs">{idx + 1}</span>
+                                    {channel.channel__name}
+                                </span>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-gray-500 font-mono text-[9px] uppercase tracking-tighter">{channel.views} CONNECTIONS</span>
+                                    <span className="text-blue-400 font-mono text-[10px] font-bold">{formatDuration(channel.total_duration)} WATCHED</span>
+                                </div>
                             </div>
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                                <motion.div initial={{ width: 0 }} animate={{ width: `${(channel.views / maxViews) * 100}%` }} className="h-full bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
+                            <div className="h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/[0.02]">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${(channel.total_duration / maxDuration) * 100}%` }}
+                                    className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all duration-1000 group-hover:from-blue-500 group-hover:to-indigo-400"
+                                />
                             </div>
                         </div>
                     ))}
+                    {currentStats.length === 0 && (
+                        <div className="py-10 text-center text-gray-600 font-mono text-xs tracking-[0.2em] uppercase">No metrics available for this period</div>
+                    )}
                 </div>
             </div>
 
@@ -506,17 +555,18 @@ const AnalyticsView = ({ data }) => {
                                 <th className="p-6">Time</th>
                                 <th className="p-6">Viewer / Client</th>
                                 <th className="p-6">Content</th>
+                                <th className="p-6">Retention</th>
                                 <th className="p-6">Location</th>
                                 <th className="p-6">Device</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {recentActivity.map((event) => (
-                                <tr key={event.id} className="hover:bg-white/[0.01] transition-colors">
+                                <tr key={event.id} className="hover:bg-white/[0.01] transition-colors group">
                                     <td className="p-6 text-xs font-mono text-blue-400 whitespace-nowrap">{relativeTime(event.time)}</td>
                                     <td className="p-6">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-white">{event.reference}</span>
+                                            <span className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{event.reference}</span>
                                             <span className="text-[10px] text-gray-600 font-mono">{event.ip}</span>
                                         </div>
                                     </td>
@@ -526,6 +576,12 @@ const AnalyticsView = ({ data }) => {
                                                 <Film size={14} className="text-blue-500" />
                                             </div>
                                             <span className="text-sm font-medium text-gray-300">{event.channel}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-6">
+                                        <div className="flex items-center gap-2">
+                                            <Clock size={12} className="text-gray-500" />
+                                            <span className="text-xs font-bold text-gray-400">{event.duration}m</span>
                                         </div>
                                     </td>
                                     <td className="p-6">
@@ -541,7 +597,7 @@ const AnalyticsView = ({ data }) => {
                         </tbody>
                     </table>
                     {recentActivity.length === 0 && (
-                        <div className="p-20 text-center text-gray-600 font-mono text-sm tracking-widest">AWAITING VIEWER ACTIVITY...</div>
+                        <div className="p-20 text-center text-gray-600 font-mono text-sm tracking-widest uppercase">Awaiting viewer activity...</div>
                     )}
                 </div>
             </div>
