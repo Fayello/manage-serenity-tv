@@ -584,7 +584,7 @@ const AnalyticsView = ({ data }) => {
                     </div>
 
                     <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {(regionMode === 'country' ? data.top_countries : data.top_cities || []).map((c, i) => (
+                        {(regionMode === 'country' ? (data.top_countries || []) : (data.top_cities || [])).map((c, i) => (
                             <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-black/20 hover:bg-white/5 transition-colors group">
                                 <div className="flex items-center gap-3">
                                     <span className="text-gray-500 font-mono text-xs">#{i + 1}</span>
