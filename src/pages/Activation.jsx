@@ -226,10 +226,7 @@ const Activation = ({ onActivate }) => {
                             <p className="font-bold text-white group-hover:text-blue-400">Free Trial</p>
                             <p className="text-xs text-slate-500">3 Days access</p>
                         </button>
-                        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center opacity-80">
-                            <p className="font-bold text-white">Full Access</p>
-                            <p className="text-xs text-slate-500">10,000 FCFA / Year</p>
-                        </div>
+
                     </div>
 
                     <div className="pt-6 border-t border-slate-800/50 mt-2">
