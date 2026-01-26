@@ -79,8 +79,8 @@ const Activation = ({ onActivate }) => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-4 overflow-y-auto">
-            <div className="max-w-md w-full bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl mx-auto my-8">
+        <div className="min-h-screen flex items-start justify-center bg-slate-950 text-white p-4 py-8 overflow-y-auto">
+            <div className="max-w-md w-full bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
                 <div className="text-center mb-8">
                     <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500">
                         <Tv size={40} />
