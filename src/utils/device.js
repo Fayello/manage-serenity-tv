@@ -43,7 +43,7 @@ export const activateDevice = async (code) => {
     const deviceId = await getDeviceId();
     try {
         const response = await deviceService.activate(code, deviceId);
-        return response.data.status === 'active';
+        return response; // Return full response so caller can access usage_pin
     } catch (error) {
         throw error;
     }
