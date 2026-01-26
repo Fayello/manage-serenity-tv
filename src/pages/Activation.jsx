@@ -247,7 +247,7 @@ const Activation = ({ onActivate }) => {
                 )}
             </div>
         </div>
-        </div >
+        </div>
     );
 };
 
