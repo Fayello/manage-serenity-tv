@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getDeviceId, activateDevice } from '../utils/device';
 import { Lock, Tv, CheckCircle } from 'lucide-react';
+import PinSuccessModal from '../components/PinSuccessModal';
 
 const Activation = ({ onActivate }) => {
     const [activationCode, setActivationCode] = useState('');
     const [error, setError] = useState('');
     const [deviceId, setDeviceId] = useState('');
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [usagePin, setUsagePin] = useState('');
 
     useEffect(() => {
         const fetchId = async () => {
@@ -21,8 +24,13 @@ const Activation = ({ onActivate }) => {
         try {
             const response = await activateDevice(activationCode);
 
-            // Auto-refresh on success
-            if (response) {
+            // Check if PIN was returned (successful activation)
+            if (response?.data?.usage_pin) {
+                setUsagePin(response.data.usage_pin);
+                setShowPinModal(true);
+                // Will auto-continue after modal is dismissed
+            } else if (response) {
+                // No PIN but success (shouldn't happen with new backend)
                 setTimeout(() => {
                     onActivate();
                 }, 500);
@@ -180,6 +188,17 @@ const Activation = ({ onActivate }) => {
                     Contact support if you don't have a code.
                 </p>
             </div>
+
+            {/* PIN Success Modal */}
+            {showPinModal && (
+                <PinSuccessModal
+                    pin={usagePin}
+                    onContinue={() => {
+                        setShowPinModal(false);
+                        onActivate();
+                    }}
+                />
+            )}
         </div>
     );
 };
