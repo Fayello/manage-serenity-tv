@@ -463,6 +463,19 @@ const AnalyticsView = ({ data }) => {
     const [subTab, setSubTab] = useState('daily');
     const [metricMode, setMetricMode] = useState('views'); // 'views' | 'duration'
     const [regionMode, setRegionMode] = useState('country'); // 'country' | 'city'
+
+    // Guard: Ensure data is a valid object (not array, not null, not undefined)
+    if (!data || Array.isArray(data) || typeof data !== 'object') {
+        return (
+            <div className="flex items-center justify-center p-20">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-gray-500 font-medium text-sm font-mono uppercase tracking-tighter">Loading analytics...</p>
+                </div>
+            </div>
+        );
+    }
+
     const recentActivity = data.recent_activity || [];
 
     const getStatsForTab = () => {
