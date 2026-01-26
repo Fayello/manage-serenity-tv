@@ -8,6 +8,8 @@ const Activation = ({ onActivate }) => {
     const [error, setError] = useState('');
     const [deviceId, setDeviceId] = useState('');
     const [showPinModal, setShowPinModal] = useState(false);
+    const [showPinEntry, setShowPinEntry] = useState(false);
+    const [pinCode, setPinCode] = useState('');
     const [usagePin, setUsagePin] = useState('');
 
     useEffect(() => {
@@ -134,19 +136,62 @@ const Activation = ({ onActivate }) => {
                         <Lock size={20} /> Activate Device
                     </button>
 
-                    <div className="text-center">
+                    <div className="text-center space-y-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowPinEntry(!showPinEntry)}
+                            className="text-green-400 text-sm hover:text-green-300 underline font-semibold"
+                        >
+                            {showPinEntry ? '← Back to Activation Code' : 'Have a PIN? Click here'}
+                        </button>
                         <button
                             type="button"
                             onClick={async () => {
-                                // Simple re-check or redirect logic
                                 window.location.reload();
                             }}
-                            className="text-blue-400 text-sm hover:text-blue-300 underline"
+                            className="text-blue-400 text-xs hover:text-blue-300 underline block mx-auto"
                         >
-                            Device already activated? Click here to refresh
+                            Device already activated? Refresh
                         </button>
                     </div>
                 </form>
+
+                {/* PIN Entry Form */}
+                {showPinEntry && (
+                    <div className="mt-6 p-6 bg-green-500/10 border-2 border-green-500/30 rounded-2xl">
+                        <h3 className="text-lg font-bold text-green-400 mb-3 text-center">Enter Your PIN</h3>
+                        <input
+                            type="text"
+                            maxLength="6"
+                            value={pinCode}
+                            onChange={(e) => setPinCode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="000000"
+                            className="w-full bg-slate-800 border border-green-500/50 rounded-xl px-4 py-4 text-3xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-all text-center tracking-[0.5em] font-mono font-bold"
+                        />
+                        <button
+                            onClick={async () => {
+                                setError('');
+                                try {
+                                    const api = await import('../services/api').then(m => m.default);
+                                    const response = await api.post('/license/verify-pin', {
+                                        device_hash: deviceId,
+                                        usage_pin: pinCode
+                                    });
+                                    if (response.data.status === 'ACTIVE') {
+                                        setTimeout(() => onActivate(), 500);
+                                    }
+                                } catch (err) {
+                                    setError(err.response?.data?.error || 'Invalid PIN. Please try again.');
+                                }
+                            }}
+                            className="w-full mt-4 bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-500/20"
+                        >
+                            Unlock with PIN
+                        </button>
+                    </div>
+                )}
+
+                {/* Original content below */}
 
                 {/* Pricing / Trial Section */}
                 <div className="mt-8 grid grid-cols-2 gap-4">

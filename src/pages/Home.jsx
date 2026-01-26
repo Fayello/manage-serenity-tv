@@ -11,18 +11,22 @@ const SubscriptionTimer = () => {
     useEffect(() => {
         const check = async () => {
             try {
-                // Use static import
                 const fingerprint = await getDeviceId();
                 const res = await deviceService.checkStatus(fingerprint);
 
-                if (res.data.status === 'ACTIVE' || res.data.status === 'TRIAL') {
+                console.log('License status response:', res.data);
+
+                if (res.data.status === 'ACTIVE' || res.data.status === 'TRIAL' || res.data.status === 'PAID') {
                     setExpiry(new Date(res.data.expiry || res.data.trial_expiry));
                     setStatus(res.data.status === 'TRIAL' ? 'Trial Active' : 'Active');
+                } else if (res.data.status === 'TRIAL_EXPIRED') {
+                    setStatus('Trial Expired');
                 } else {
                     setStatus('Inactive');
                 }
             } catch (e) {
-                console.error("Subscription check failed", e);
+                console.error("Subscription check failed:", e);
+                console.error("Response:", e.response?.data);
                 setStatus('Unknown');
             }
         };
