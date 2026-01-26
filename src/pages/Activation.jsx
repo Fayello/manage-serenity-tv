@@ -222,51 +222,11 @@ const Activation = ({ onActivate }) => {
                                     setError(err.response?.data?.error || 'Trial activation failed');
                                 }
                             }}
-                            className="w-full bg-slate-800 hover:bg-slate-700 p-4 rounded-xl border border-slate-700 text-center transition-all group mb-8"
+                            className="bg-slate-800 hover:bg-slate-700 p-4 rounded-xl border border-slate-700 text-center transition-all group w-full"
                         >
-                            <p className="font-bold text-white group-hover:text-blue-400">Start Free Trial</p>
-                            <p className="text-xs text-slate-500">3 Days free access • No commitment</p>
+                            <p className="font-bold text-white group-hover:text-blue-400">Free Trial</p>
+                            <p className="text-xs text-slate-500">3 Days access</p>
                         </button>
-
-                        <div className="space-y-4">
-                            <h3 className="text-center text-slate-500 text-xs font-bold uppercase tracking-widest mb-4">Choose Your Plan</h3>
-
-                            {/* 1 Month - Decoy */}
-                            <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex justify-between items-center hover:bg-white/[0.05] transition-colors cursor-pointer group">
-                                <div>
-                                    <p className="font-bold text-white group-hover:text-blue-400 transition-colors">1 Month</p>
-                                    <p className="text-xs text-slate-500">The Starter</p>
-                                </div>
-                                <p className="font-bold text-slate-300">2,000 CFA</p>
-                            </div>
-
-                            {/* 4 Months - Best Value */}
-                            <div className="relative bg-blue-600/10 border-2 border-blue-500 p-4 rounded-xl flex justify-between items-center transform hover:scale-[1.02] transition-all cursor-pointer shadow-lg shadow-blue-500/10">
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wide shadow-md">
-                                    Most Popular
-                                </div>
-                                <div>
-                                    <p className="font-bold text-white">4 Months</p>
-                                    <p className="text-xs text-blue-200">Best Value (Save 3,000)</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-blue-400 text-lg leading-none">5,000 CFA</p>
-                                    <p className="text-[10px] text-blue-300/50 line-through">8,000 CFA</p>
-                                </div>
-                            </div>
-
-                            {/* 1 Year - VIP */}
-                            <div className="bg-white/[0.03] border border-purple-500/30 p-4 rounded-xl flex justify-between items-center hover:bg-purple-500/10 transition-colors cursor-pointer group">
-                                <div>
-                                    <p className="font-bold text-white group-hover:text-purple-400 transition-colors">1 Year</p>
-                                    <p className="text-xs text-slate-500">VIP Access</p>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-purple-400">12,000 CFA</p>
-                                    <p className="text-[10px] text-right text-slate-600">1,000/mo</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div className="pt-6 border-t border-slate-800/50 mt-2">
