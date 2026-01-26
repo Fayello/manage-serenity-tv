@@ -68,10 +68,24 @@ const Activation = ({ onActivate }) => {
                         </button>
                     </span>
                 );
-            } else if (errorMsg.includes('expired')) {
-                setError('This code has expired. Please purchase a new one.');
-            } else if (errorMsg.includes('revoked')) {
-                setError('This code has been revoked by an administrator. Access is denied.');
+            } else if (errorMsg.includes('expired') || errorMsg.includes('Expired')) {
+                setError(
+                    <span>
+                        ⏰ This activation code has <strong>expired</strong>.<br />
+                        <span className="text-xs text-red-300 mt-1 block">
+                            The code was valid but is no longer active. Please purchase a new activation code.
+                        </span>
+                    </span>
+                );
+            } else if (errorMsg.includes('revoked') || errorMsg.includes('Revoked')) {
+                setError(
+                    <span>
+                        🚫 This activation code has been <strong>revoked</strong>.<br />
+                        <span className="text-xs text-red-300 mt-1 block">
+                            Access to this code has been disabled by an administrator. Contact support for assistance.
+                        </span>
+                    </span>
+                );
             } else {
                 setError(errorMsg || 'Invalid activation code. Please try again.');
             }
