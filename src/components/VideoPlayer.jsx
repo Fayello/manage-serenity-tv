@@ -12,6 +12,11 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
     const [showSettings, setShowSettings] = React.useState(false);
     const [currentUrl, setCurrentUrl] = React.useState('');
     const [isProxy, setIsProxy] = React.useState(false);
+    
+    // Recording state
+    const [isRecording, setIsRecording] = React.useState(false);
+    const mediaRecorderRef = useRef(null);
+    const chunksRef = useRef([]);
 
     useEffect(() => {
         if (channelId && deviceId) {
@@ -94,9 +99,39 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
         }
     };
 
+    const handleRecord = () => {
+        if (isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        } else {
+            const video = videoRef.current;
+            const stream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+            
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+            mediaRecorderRef.current = recorder;
+            chunksRef.current = [];
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunksRef.current.push(e.data);
+            };
+
+            recorder.onstop = () => {
+                const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `recording_${Date.now()}.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            recorder.start();
+            setIsRecording(true);
+        }
+    };
+
     const handleDownload = () => {
         // Use the proxied URL to bypass 'Access Denied' security blocks.
-        // Note: For .m3u8 it will download the manifest. For direct files it will download the video.
         const link = document.createElement('a');
         link.href = currentUrl || streamUrl || url;
         link.setAttribute('download', 'video.mp4'); 
@@ -114,22 +149,25 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
                 poster={poster}
                 controls
                 playsInline
+                crossOrigin="anonymous"
             />
             
             {/* Top Controls Overlay */}
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/player:opacity-100 transition-opacity z-30">
+                {/* Language Switcher */}
                 {audioTracks.length > 1 && (
                     <div className="relative">
                         <button 
                             onClick={() => setShowSettings(!showSettings)}
-                            className="bg-black/60 hover:bg-black/90 p-2 rounded-lg text-white border border-white/10 backdrop-blur-md flex items-center gap-2 text-xs font-bold"
+                            className={`p-2 rounded-lg border backdrop-blur-md flex items-center gap-2 text-xs font-bold transition-all ${showSettings ? 'bg-blue-600 border-blue-400 text-white' : 'bg-black/60 hover:bg-black/80 border-white/10 text-slate-300'}`}
                         >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                             <span className="uppercase">{audioTracks[currentAudio]?.name || 'Audio'}</span>
                         </button>
                         
                         {showSettings && (
                             <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900/95 border border-white/10 rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl">
-                                <div className="p-2 border-b border-white/5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Select Language</div>
+                                <div className="p-2 border-b border-white/5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Language Options</div>
                                 {audioTracks.map((track) => (
                                     <button
                                         key={track.id}
@@ -144,10 +182,23 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
                     </div>
                 )}
                 
+                {/* Record Button */}
+                {(streamUrl || url || channelId) && (
+                    <button 
+                        onClick={handleRecord}
+                        className={`p-2 rounded-lg border backdrop-blur-md transition-all flex items-center gap-2 ${isRecording ? 'bg-red-600 border-red-400 animate-pulse' : 'bg-black/60 hover:bg-black/80 border-white/10'}`}
+                        title={isRecording ? "Stop Recording" : "Start Recording"}
+                    >
+                        <div className={`w-3 h-3 rounded-full ${isRecording ? 'bg-white' : 'bg-red-500'}`} />
+                        {isRecording && <span className="text-[10px] text-white font-bold uppercase tracking-tighter">REC</span>}
+                    </button>
+                )}
+
+                {/* Download Button */}
                 {(streamUrl || url) && (
                     <button 
                         onClick={handleDownload}
-                        className="bg-white/10 hover:bg-blue-600 p-2 rounded-lg text-white border border-white/10 backdrop-blur-md transition-colors"
+                        className="bg-black/60 hover:bg-blue-600 p-2 rounded-lg text-white border border-white/10 backdrop-blur-md transition-colors"
                         title="Download Content"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
