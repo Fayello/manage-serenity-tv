@@ -68,22 +68,24 @@ export default async function handler(req, res) {
         }
 
         // 4. Fetch the target (Manifest or Segment)
-        // We use a single, highly compatible set of headers to minimize latency
+        // SUPER STEALTH: Forward user IP and use Residential headers
+        const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         const targetUrlObj = new URL(targetUrl);
         const headers = {
-            'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': req.headers['accept-language'] || 'en-US,en;q=0.9',
             'Referer': targetUrlObj.origin + '/',
             'Origin': targetUrlObj.origin,
+            'X-Forwarded-For': userIp,
+            'X-Real-IP': userIp,
             'Connection': 'keep-alive'
         };
         if (req.headers.range) headers['Range'] = req.headers.range;
 
         let response;
         try {
-            // Standard fetch with 9s timeout (Vercel hobby limit is 10s)
-            response = await fetch(targetUrl, { headers, signal: AbortSignal.timeout(9000) });
+            response = await fetch(targetUrl, { headers, signal: AbortSignal.timeout(9500) });
         } catch (fetchError) {
             return res.status(504).json({ error: "Upstream timeout", details: fetchError.message, target: targetUrl });
         }
@@ -92,7 +94,8 @@ export default async function handler(req, res) {
             return res.status(response.status).json({ 
                 error: "Proxy upstream error", 
                 status: response.status,
-                target: targetUrl
+                target: targetUrl,
+                msg: "The provider returned an error (likely an IP blocked or expired token)."
             });
         }
 
