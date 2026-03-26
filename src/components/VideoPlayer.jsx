@@ -105,9 +105,20 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
             setIsRecording(false);
         } else {
             const video = videoRef.current;
+            // Ensure video isn't muted by accident
+            video.muted = false;
+            
+            // Capture stream and explicitly check for audio
             const stream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
             
-            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+            // Check if we have audio tracks. If not, recording will be silent.
+            if (stream.getAudioTracks().length === 0) {
+                console.warn("No audio tracks found in captured stream. Recording may be silent.");
+            }
+
+            const recorder = new MediaRecorder(stream, { 
+                mimeType: 'video/webm;codecs=vp9,opus' 
+            });
             mediaRecorderRef.current = recorder;
             chunksRef.current = [];
 
@@ -120,12 +131,12 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `recording_${Date.now()}.webm`;
+                a.download = `serenity_tv_record_${Date.now()}.webm`;
                 a.click();
                 URL.revokeObjectURL(url);
             };
 
-            recorder.start();
+            recorder.start(1000); // Sample every second for stability
             setIsRecording(true);
         }
     };
@@ -139,10 +150,13 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
                 controls
                 playsInline
                 crossOrigin="anonymous"
+                onLoadedMetadata={() => {
+                    if (videoRef.current) videoRef.current.muted = false;
+                }}
             />
             
-            {/* Top Controls Overlay */}
-            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/player:opacity-100 transition-opacity z-30">
+            {/* Top Controls Overlay - Stay visible if recording */}
+            <div className={`absolute top-4 right-4 flex gap-2 transition-opacity z-30 ${isRecording ? 'opacity-100' : 'opacity-0 group-hover/player:opacity-100'}`}>
                 {/* Language Switcher */}
                 {audioTracks.length > 0 && (
                     <div className="relative">
