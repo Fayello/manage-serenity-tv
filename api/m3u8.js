@@ -55,7 +55,8 @@ export default async function handler(req, res) {
             
             let pathPart = path ? decodeURIComponent(path) : null;
             if (pathPart) {
-                const resolvedUrl = new URL(pathPart, currentBaseBase);
+                // If path starts with /, it's relative to the origin, not the parent folder
+                const resolvedUrl = pathPart.startsWith('/') ? new URL(pathPart, baseUrlObj.origin) : new URL(pathPart, currentBaseBase);
                 targetUrl = resolvedUrl.href;
                 if (!resolvedUrl.search && baseUrlObj.search) {
                     targetUrl += baseUrlObj.search;
@@ -69,26 +70,39 @@ export default async function handler(req, res) {
         }
 
         // 4. Fetch the target (Manifest or Segment)
-        // We only forward ESSENTIAL headers to avoid confusing upstream CDNs with Vercel internal headers
-        const headers = {
-            'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': req.headers['accept'] || '*/*',
-            'Accept-Language': req.headers['accept-language'],
-            'Connection': 'keep-alive',
-            'Referer': currentBaseUrlObj.origin + '/',
-            'Origin': currentBaseUrlObj.origin
+        // SMART HEADERS: We try to be as minimal as possible first to avoid CDN detection
+        const getHeaders = (isRetry = false) => {
+            const base = {
+                'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+            };
+            if (!isRetry) {
+                base['Referer'] = currentBaseUrlObj.origin + '/';
+                base['Origin'] = currentBaseUrlObj.origin;
+            }
+            if (req.headers.range) base['Range'] = req.headers.range;
+            return base;
         };
-        // Forward Range header for partial video segment fetching (important for some players)
-        if (req.headers.range) headers['Range'] = req.headers.range;
 
-        const response = await fetch(targetUrl, { headers });
+        let response;
+        try {
+            response = await fetch(targetUrl, { headers: getHeaders(), signal: AbortSignal.timeout(8000) });
+            // If it failed with 5xx, some CDNs (like Rakuten) might not like our Referer/Origin spoofing. Try again minimally.
+            if (!response.ok && response.status >= 500) {
+                response = await fetch(targetUrl, { headers: getHeaders(true), signal: AbortSignal.timeout(8000) });
+            }
+        } catch (fetchError) {
+            return res.status(504).json({ error: "Upstream timeout or connection error", details: fetchError.message, target: targetUrl });
+        }
+
         if (!response.ok) {
             console.error(`Upstream failure: ${response.status} for ${targetUrl}`);
             return res.status(response.status).json({ 
                 error: "Proxy upstream error", 
                 status: response.status,
                 target: targetUrl,
-                headers_sent: headers
+                msg: "The provider returned an error. This may be an IP block or temporary outage."
             });
         }
 
@@ -100,12 +114,9 @@ export default async function handler(req, res) {
         if (finalUrl.includes('.m3u8') || (contentType && contentType.includes('mpegurl'))) {
             let manifest = await response.text();
             
-            // Helper to rewrite a URI into a proxy URL
             const getProxyUrl = (originalLine) => {
                 const trimmed = originalLine.trim();
                 let relativePath = trimmed;
-                // If the line has its own query string, we strip it from the client-side 'path' 
-                // but keep it in the 'stream' param to avoid 414.
                 if (finalUrlObj.search && trimmed.includes(finalUrlObj.search)) {
                     relativePath = trimmed.replace(finalUrlObj.search, '');
                 }
@@ -117,20 +128,10 @@ export default async function handler(req, res) {
             const rewrittenLines = lines.map(line => {
                 const trimmed = line.trim();
                 if (!trimmed) return line;
-
-                // Case 1: Standard segment or playlist line (doesn't start with #)
-                if (!trimmed.startsWith('#')) {
-                    return getProxyUrl(trimmed);
-                }
-
-                // Case 2: Tags with URI attributes (e.g., #EXT-X-MEDIA, #EXT-X-KEY, #EXT-X-MAP, #EXT-X-PATCH-UPDATE)
-                // We search for URI="quoted-value" and rewrite the quoted value
+                if (!trimmed.startsWith('#')) return getProxyUrl(trimmed);
                 if (trimmed.includes('URI=')) {
-                    return line.replace(/URI="([^"]+)"/g, (match, uri) => {
-                        return `URI="${getProxyUrl(uri)}"`;
-                    });
+                    return line.replace(/URI="([^"]+)"/g, (match, uri) => `URI="${getProxyUrl(uri)}"`);
                 }
-
                 return line;
             });
 
@@ -145,7 +146,6 @@ export default async function handler(req, res) {
         res.setHeader('Content-Type', contentType || 'video/MP2T');
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Cache-Control', 'public, max-age=3600');
-        // Vercel Edge/Serverless handles Buffer but for maximum compatibility with all environments:
         return res.status(200).send(Buffer.from(data));
 
     } catch (error) {
