@@ -68,6 +68,11 @@ const Home = () => {
     const [isFetchingSub, setIsFetchingSub] = useState(false);
 
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [deviceId, setDeviceId] = useState(null);
+
+    useEffect(() => {
+        getDeviceId().then(setDeviceId);
+    }, []);
 
     useEffect(() => {
         const fetchMetadata = async () => {
@@ -322,7 +327,9 @@ const Home = () => {
                             </button>
                         </div>
                         <VideoPlayer
-                            url={selectedChannel.stream_url}
+                            channelId={selectedChannel.id}
+                            deviceId={deviceId}
+                            poster={selectedChannel.logo_url}
                             className="w-full h-full"
                         />
                         <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-6 pt-20 pointer-events-none">

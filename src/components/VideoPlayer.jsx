@@ -3,25 +3,30 @@ import Hls from 'hls.js';
 import { AlertTriangle } from 'lucide-react';
 import { API_URL } from '../services/api';
 
-const VideoPlayer = ({ url, poster, className, autoPlay = true }) => {
+const VideoPlayer = ({ url, channelId, deviceId, poster, className, autoPlay = true }) => {
     const videoRef = useRef(null);
     const hlsRef = useRef(null);
 
-    const [currentUrl, setCurrentUrl] = React.useState(url);
+    const [currentUrl, setCurrentUrl] = React.useState(null);
     const [isProxy, setIsProxy] = React.useState(false);
 
     useEffect(() => {
-        // Preemptive Proxying: If the page is HTTPS and the stream is HTTP,
-        // it WILL fail due to Mixed Content. Use proxy immediately.
-        if (window.location.protocol === 'https:' && url.startsWith('http://')) {
-            console.log("Preemptive Proxying for HTTP stream...");
-            setCurrentUrl(`${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`);
+        if (channelId && deviceId) {
+            // Use Secure Vercel Proxy
+            const secureUrl = `/api/m3u8?id=${channelId}&device=${deviceId}`;
+            setCurrentUrl(secureUrl);
             setIsProxy(true);
-        } else {
-            setCurrentUrl(url);
-            setIsProxy(false);
+        } else if (url) {
+            // Fallback to original logic (e.g. for preview or if new props missing)
+            if (window.location.protocol === 'https:' && url.startsWith('http://')) {
+                setCurrentUrl(`${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`);
+                setIsProxy(true);
+            } else {
+                setCurrentUrl(url);
+                setIsProxy(false);
+            }
         }
-    }, [url]);
+    }, [url, channelId, deviceId]);
 
     useEffect(() => {
         const video = videoRef.current;
