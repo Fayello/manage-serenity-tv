@@ -79,6 +79,12 @@ const Home = () => {
         getDeviceId().then(setDeviceId);
     }, []);
 
+    // Core genres for the sidebar - these stay fixed and sorted
+    const CORE_GENRES = [
+        'French TV', 'English TV', 'Movies', 'Sports', 'Anime', 
+        'News', 'Music', 'Kids', 'World TV', 'Religious', 'Documentary', 'Novelas'
+    ];
+
     // Refresh Metadata (Categories/Countries/Langs)
     const fetchMetadata = async () => {
         try {
@@ -87,7 +93,20 @@ const Home = () => {
                 channelService.getCountries(),
                 channelService.getLanguages()
             ]);
-            setGroups(['All', ...catsRes.data]);
+            
+            // Filter categories to only show our CORE_GENRES + any other high-level ones
+            // This hides the 135+ raw country names from the sidebar
+            const availableCats = catsRes.data;
+            const filteredCats = CORE_GENRES.filter(genre => 
+                availableCats.some(c => c.toLowerCase() === genre.toLowerCase())
+            );
+
+            // Add any missing ones that are explicitly tagged as sub-genres (e.g. Sports FR)
+            const subGenres = availableCats.filter(c => 
+                (c.includes(' FR') || c.includes(' EN')) && !filteredCats.includes(c)
+            );
+
+            setGroups(['All', ...filteredCats, ...subGenres]);
             setCountries(['All', ...countriesRes.data]);
             setLanguages(['All', ...langsRes.data]);
         } catch (error) {
