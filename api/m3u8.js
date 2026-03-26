@@ -48,47 +48,48 @@ export default async function handler(req, res) {
 
         // 3. Construct the actual target URL
         // If 'path' is provided, we are proxying a segment or a child playlist
-        const urlObj = new URL(streamUrl);
-        const baseUrl = urlObj.origin + urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1);
+        // We use the 'stream' param (or resolved streamUrl) as the base
+        const currentBaseUrlObj = new URL(streamUrl);
+        const currentBaseUrl = currentBaseUrlObj.origin + currentBaseUrlObj.pathname.substring(0, currentBaseUrlObj.pathname.lastIndexOf('/') + 1);
         
-        // We strip any query string from the 'path' the browser gave us, 
-        // to ensure we only use the short Clean Path, 
-        // then we append our Secret Query String (token) server-side.
         let cleanPath = path ? path.split('?')[0] : null;
-        const targetUrl = cleanPath ? (new URL(cleanPath, baseUrl).href + urlObj.search) : streamUrl;
+        const targetUrl = cleanPath ? (new URL(cleanPath, currentBaseUrl).href + currentBaseUrlObj.search) : streamUrl;
 
         // 4. Fetch the target (Manifest or Segment)
+        // We capture the response and use the FINAL redirected URL for base calculations
         const response = await fetch(targetUrl);
         if (!response.ok) return res.status(response.status).json({ error: "Failed to fetch source" });
 
+        const finalUrl = response.url; // This tracks redirects!
+        const finalUrlObj = new URL(finalUrl);
+        const finalBaseUrl = finalUrlObj.origin + finalUrlObj.pathname.substring(0, finalUrlObj.pathname.lastIndexOf('/') + 1);
+
         const contentType = response.headers.get('content-type');
 
-        // 5. Handle Manifest (.m3u8)
-        if (targetUrl.includes('.m3u8') || (contentType && contentType.includes('mpegurl'))) {
+        // 4. Handle Manifest (.m3u8)
+        if (finalUrl.includes('.m3u8') || (contentType && contentType.includes('mpegurl'))) {
             let manifest = await response.text();
             const lines = manifest.split('\n');
             const rewrittenLines = lines.map(line => {
                 const trimmed = line.trim();
                 if (trimmed && !trimmed.startsWith('#')) {
                     // Extract only the relative file path, ignoring any existing query string in the manifest
-                    // This is key to keeping the Vercel browser-side URL short (solving 414)
                     let relativePath = trimmed.split('?')[0];
                     
                     if (trimmed.startsWith('http')) {
                         try {
                             const segmentUrl = new URL(trimmed);
-                            if (segmentUrl.host === urlObj.host) {
-                                relativePath = segmentUrl.pathname.replace(urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1), '');
+                            if (segmentUrl.host === finalUrlObj.host) {
+                                relativePath = segmentUrl.pathname.replace(finalUrlObj.pathname.substring(0, finalUrlObj.pathname.lastIndexOf('/') + 1), '');
                             } else {
-                                // If it's a completely different host, we might need a different strategy
-                                // But for IPTV variants, they are usually on the same host.
-                                return trimmed; // Leave absolute if not same host for now
+                                return trimmed;
                             }
                         } catch(e) {}
                     }
-                    // Important: We propagate the 'stream' parameter to all child links 
-                    // so the proxy remains "stateless" and doesn't depend on the backend for segments
-                    const streamParam = stream ? `&stream=${encodeURIComponent(stream)}` : "";
+                    
+                    // We propagate the FINAL query string (token) back to the proxy via the 'stream' param
+                    // but we encode the base manifest URL with its token for stateless resolution
+                    const streamParam = `&stream=${encodeURIComponent(finalUrl)}`;
                     return `/api/m3u8?id=${id}&device=${device}${streamParam}&path=${encodeURIComponent(relativePath)}`;
                 }
                 return line;
