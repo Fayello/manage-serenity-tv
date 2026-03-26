@@ -57,8 +57,20 @@ export default async function handler(req, res) {
 
         // 4. Fetch the target (Manifest or Segment)
         // We capture the response and use the FINAL redirected URL for base calculations
-        const response = await fetch(targetUrl);
-        if (!response.ok) return res.status(response.status).json({ error: "Failed to fetch source" });
+        // We forward the User-Agent as many IPTV providers (Pluto, Samsung) enforce it
+        const headers = {
+            'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        };
+
+        const response = await fetch(targetUrl, { headers });
+        if (!response.ok) {
+            console.error(`Upstream failure: ${response.status} for ${targetUrl}`);
+            return res.status(response.status).json({ 
+                error: "Failed to fetch source", 
+                status: response.status,
+                target: targetUrl 
+            });
+        }
 
         const finalUrl = response.url; // This tracks redirects!
         const finalUrlObj = new URL(finalUrl);
