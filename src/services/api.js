@@ -120,8 +120,20 @@ export const channelService = {
     getCountries: async () => {
         return await api.get('/channels/countries/');
     },
+    getLanguages: async () => {
+        return await api.get('/channels/languages/');
+    },
     recordView: async (channelId, deviceHash) => {
         return await api.post('/analytics/record', { channel_id: channelId, device_hash: deviceHash });
+    }
+};
+
+export const vodService = {
+    getSeries: async (page = 1, params = {}) => {
+        return await api.get('/series/', { params: { page, page_size: 50, ...params } });
+    },
+    getEpisodes: async (seriesId) => {
+        return await api.get(`/series/${seriesId}/episodes/`);
     }
 };
 
