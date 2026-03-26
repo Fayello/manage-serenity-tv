@@ -114,7 +114,7 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
                 controls
                 playsInline
             />
-            {!url && (
+            {(!url && !channelId) && (
                 <div className="absolute inset-0 flex items-center justify-center text-slate-500">
                     <div className="text-center">
                         <AlertTriangle className="mx-auto mb-2 opacity-50" />
