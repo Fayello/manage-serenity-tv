@@ -48,14 +48,13 @@ export default async function handler(req, res) {
 
         // 3. Construct the actual target URL
         let targetUrl = "";
-        let currentBaseUrlObj = null;
+        let baseUrlObj;
         try {
-            const baseUrlObj = new URL(streamUrl);
+            baseUrlObj = new URL(streamUrl);
             const currentBaseBase = baseUrlObj.origin + baseUrlObj.pathname.substring(0, baseUrlObj.pathname.lastIndexOf('/') + 1);
             
             let pathPart = path ? decodeURIComponent(path) : null;
             if (pathPart) {
-                // If path starts with /, it's relative to the origin, not the parent folder
                 const resolvedUrl = pathPart.startsWith('/') ? new URL(pathPart, baseUrlObj.origin) : new URL(pathPart, currentBaseBase);
                 targetUrl = resolvedUrl.href;
                 if (!resolvedUrl.search && baseUrlObj.search) {
@@ -64,45 +63,36 @@ export default async function handler(req, res) {
             } else {
                 targetUrl = streamUrl;
             }
-            currentBaseUrlObj = new URL(targetUrl);
         } catch (e) {
-            return res.status(400).json({ error: "Invalid stream or path URL format", details: e.message, streamUrl, path });
+            return res.status(400).json({ error: "Invalid stream or path URL format", details: e.message });
         }
 
         // 4. Fetch the target (Manifest or Segment)
-        // SMART HEADERS: We try to be as minimal as possible first to avoid CDN detection
-        const getHeaders = (isRetry = false) => {
-            const base = {
-                'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Accept': '*/*',
-                'Accept-Language': 'en-US,en;q=0.9',
-            };
-            if (!isRetry) {
-                base['Referer'] = currentBaseUrlObj.origin + '/';
-                base['Origin'] = currentBaseUrlObj.origin;
-            }
-            if (req.headers.range) base['Range'] = req.headers.range;
-            return base;
+        // We use a single, highly compatible set of headers to minimize latency
+        const targetUrlObj = new URL(targetUrl);
+        const headers = {
+            'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': targetUrlObj.origin + '/',
+            'Origin': targetUrlObj.origin,
+            'Connection': 'keep-alive'
         };
+        if (req.headers.range) headers['Range'] = req.headers.range;
 
         let response;
         try {
-            response = await fetch(targetUrl, { headers: getHeaders(), signal: AbortSignal.timeout(8000) });
-            // If it failed with 5xx, some CDNs (like Rakuten) might not like our Referer/Origin spoofing. Try again minimally.
-            if (!response.ok && response.status >= 500) {
-                response = await fetch(targetUrl, { headers: getHeaders(true), signal: AbortSignal.timeout(8000) });
-            }
+            // Standard fetch with 9s timeout (Vercel hobby limit is 10s)
+            response = await fetch(targetUrl, { headers, signal: AbortSignal.timeout(9000) });
         } catch (fetchError) {
-            return res.status(504).json({ error: "Upstream timeout or connection error", details: fetchError.message, target: targetUrl });
+            return res.status(504).json({ error: "Upstream timeout", details: fetchError.message, target: targetUrl });
         }
 
         if (!response.ok) {
-            console.error(`Upstream failure: ${response.status} for ${targetUrl}`);
             return res.status(response.status).json({ 
                 error: "Proxy upstream error", 
                 status: response.status,
-                target: targetUrl,
-                msg: "The provider returned an error. This may be an IP block or temporary outage."
+                target: targetUrl
             });
         }
 
@@ -112,25 +102,32 @@ export default async function handler(req, res) {
 
         // 5. Handle Manifest (.m3u8)
         if (finalUrl.includes('.m3u8') || (contentType && contentType.includes('mpegurl'))) {
-            let manifest = await response.text();
-            
-            const getProxyUrl = (originalLine) => {
-                const trimmed = originalLine.trim();
-                let relativePath = trimmed;
-                if (finalUrlObj.search && trimmed.includes(finalUrlObj.search)) {
-                    relativePath = trimmed.replace(finalUrlObj.search, '');
-                }
-                const streamParam = `&stream=${encodeURIComponent(finalUrl)}`;
-                return `/api/m3u8?id=${id}&device=${device}${streamParam}&path=${encodeURIComponent(relativePath)}`;
-            };
+            const manifest = await response.text();
+            const streamParam = `&stream=${encodeURIComponent(finalUrl)}`;
+            const baseProxyUrl = `/api/m3u8?id=${id}&device=${device}${streamParam}&path=`;
 
-            const lines = manifest.split('\n');
-            const rewrittenLines = lines.map(line => {
+            const rewrittenLines = manifest.split('\n').map(line => {
                 const trimmed = line.trim();
                 if (!trimmed) return line;
-                if (!trimmed.startsWith('#')) return getProxyUrl(trimmed);
+
+                // Case 1: Standard segment or playlist line
+                if (!trimmed.startsWith('#')) {
+                    let relativePath = trimmed;
+                    if (finalUrlObj.search && trimmed.includes(finalUrlObj.search)) {
+                        relativePath = trimmed.replace(finalUrlObj.search, '');
+                    }
+                    return baseProxyUrl + encodeURIComponent(relativePath);
+                }
+
+                // Case 2: Tags with URI attributes
                 if (trimmed.includes('URI=')) {
-                    return line.replace(/URI="([^"]+)"/g, (match, uri) => `URI="${getProxyUrl(uri)}"`);
+                    return line.replace(/URI="([^"]+)"/g, (match, uri) => {
+                        let relativePath = uri;
+                        if (finalUrlObj.search && uri.includes(finalUrlObj.search)) {
+                            relativePath = uri.replace(finalUrlObj.search, '');
+                        }
+                        return `URI="${baseProxyUrl}${encodeURIComponent(relativePath)}"`;
+                    });
                 }
                 return line;
             });
