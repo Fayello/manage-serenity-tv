@@ -63,11 +63,9 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
 
             hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
-                    console.log("HLS Fatal Error:", data);
                     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                         // Check if we can fallback to proxy
                         if (!isProxy) {
-                            console.warn("Direct stream failed. Attempting Proxy Fallback...");
                             const proxyUrl = `${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`;
                             setIsProxy(true);
                             setCurrentUrl(proxyUrl);
@@ -84,12 +82,10 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             // Native HLS support
             video.src = currentUrl;
-            if (autoPlay) video.play().catch(e => console.log("Autoplay blocked:", e));
-
-            // Native Error Listener for fallback
-            const onError = (e) => {
+            if (autoPlay) video.play().catch(() => {}); // Silence autoplay block logs
+            
+            const onError = () => {
                 if (!isProxy) {
-                    console.warn("Native Player Error. Attempting Proxy...");
                     const fallbackUrl = `${API_URL}/stream/proxy?url=${encodeURIComponent(url)}`;
                     setIsProxy(true);
                     setCurrentUrl(fallbackUrl);
