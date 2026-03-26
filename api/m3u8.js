@@ -99,17 +99,38 @@ export default async function handler(req, res) {
         // 5. Handle Manifest (.m3u8)
         if (finalUrl.includes('.m3u8') || (contentType && contentType.includes('mpegurl'))) {
             let manifest = await response.text();
+            
+            // Helper to rewrite a URI into a proxy URL
+            const getProxyUrl = (originalLine) => {
+                const trimmed = originalLine.trim();
+                let relativePath = trimmed;
+                // If the line has its own query string, we strip it from the client-side 'path' 
+                // but keep it in the 'stream' param to avoid 414.
+                if (finalUrlObj.search && trimmed.includes(finalUrlObj.search)) {
+                    relativePath = trimmed.replace(finalUrlObj.search, '');
+                }
+                const streamParam = `&stream=${encodeURIComponent(finalUrl)}`;
+                return `/api/m3u8?id=${id}&device=${device}${streamParam}&path=${encodeURIComponent(relativePath)}`;
+            };
+
             const lines = manifest.split('\n');
             const rewrittenLines = lines.map(line => {
                 const trimmed = line.trim();
-                if (trimmed && !trimmed.startsWith('#')) {
-                    let relativePath = trimmed;
-                    if (finalUrlObj.search && trimmed.includes(finalUrlObj.search)) {
-                        relativePath = trimmed.replace(finalUrlObj.search, '');
-                    }
-                    const streamParam = `&stream=${encodeURIComponent(finalUrl)}`;
-                    return `/api/m3u8?id=${id}&device=${device}${streamParam}&path=${encodeURIComponent(relativePath)}`;
+                if (!trimmed) return line;
+
+                // Case 1: Standard segment or playlist line (doesn't start with #)
+                if (!trimmed.startsWith('#')) {
+                    return getProxyUrl(trimmed);
                 }
+
+                // Case 2: Tags with URI attributes (e.g., #EXT-X-MEDIA, #EXT-X-KEY, #EXT-X-MAP, #EXT-X-PATCH-UPDATE)
+                // We search for URI="quoted-value" and rewrite the quoted value
+                if (trimmed.includes('URI=')) {
+                    return line.replace(/URI="([^"]+)"/g, (match, uri) => {
+                        return `URI="${getProxyUrl(uri)}"`;
+                    });
+                }
+
                 return line;
             });
 
