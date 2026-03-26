@@ -39,7 +39,12 @@ export default async function handler(req, res) {
         // If 'path' is provided, we are proxying a segment or a child playlist
         const urlObj = new URL(streamUrl);
         const baseUrl = urlObj.origin + urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1);
-        const targetUrl = path ? (new URL(path, baseUrl).href + urlObj.search) : streamUrl;
+        
+        // We strip any query string from the 'path' the browser gave us, 
+        // to ensure we only use the short Clean Path, 
+        // then we append our Secret Query String (token) server-side.
+        let cleanPath = path ? path.split('?')[0] : null;
+        const targetUrl = cleanPath ? (new URL(cleanPath, baseUrl).href + urlObj.search) : streamUrl;
 
         // 4. Fetch the target (Manifest or Segment)
         const response = await fetch(targetUrl);
@@ -54,15 +59,19 @@ export default async function handler(req, res) {
             const rewrittenLines = lines.map(line => {
                 const trimmed = line.trim();
                 if (trimmed && !trimmed.startsWith('#')) {
-                    // Rewrite relative or absolute URL to point to OUR proxy
-                    // We pass 'path' as the relative part
-                    let relativePath = trimmed;
+                    // Extract only the relative file path, ignoring any existing query string in the manifest
+                    // This is key to keeping the Vercel browser-side URL short (solving 414)
+                    let relativePath = trimmed.split('?')[0];
+                    
                     if (trimmed.startsWith('http')) {
-                        // If it's absolute, we try to make it relative to the stream's base
                         try {
                             const segmentUrl = new URL(trimmed);
                             if (segmentUrl.host === urlObj.host) {
                                 relativePath = segmentUrl.pathname.replace(urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1), '');
+                            } else {
+                                // If it's a completely different host, we might need a different strategy
+                                // But for IPTV variants, they are usually on the same host.
+                                return trimmed; // Leave absolute if not same host for now
                             }
                         } catch(e) {}
                     }
