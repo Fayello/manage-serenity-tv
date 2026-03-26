@@ -95,10 +95,11 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
     };
 
     const handleDownload = () => {
-        // If it's a direct MP4, we can download. If it's HLS, we suggest a downloader or give the link.
+        // Use the proxied URL to bypass 'Access Denied' security blocks.
+        // Note: For .m3u8 it will download the manifest. For direct files it will download the video.
         const link = document.createElement('a');
-        link.href = streamUrl || url;
-        link.setAttribute('download', 'video.mp4');
+        link.href = currentUrl || streamUrl || url;
+        link.setAttribute('download', 'video.mp4'); 
         link.setAttribute('target', '_blank');
         document.body.appendChild(link);
         link.click();
