@@ -10,6 +10,8 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
     const [audioTracks, setAudioTracks] = React.useState([]);
     const [currentAudio, setCurrentAudio] = React.useState(-1);
     const [showSettings, setShowSettings] = React.useState(false);
+    const [currentUrl, setCurrentUrl] = React.useState('');
+    const [isProxy, setIsProxy] = React.useState(false);
 
     useEffect(() => {
         if (channelId && deviceId) {
