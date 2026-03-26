@@ -329,6 +329,7 @@ const Home = () => {
                         <VideoPlayer
                             channelId={selectedChannel.id}
                             deviceId={deviceId}
+                            streamUrl={selectedChannel.stream_url}
                             poster={selectedChannel.logo_url}
                             className="w-full h-full"
                         />

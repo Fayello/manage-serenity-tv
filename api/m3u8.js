@@ -21,19 +21,30 @@ export default async function handler(req, res) {
         // 2. Resolve Channel URL
         let streamUrl = stream ? decodeURIComponent(stream) : "";
         if (!streamUrl) {
-            const channelRes = await fetch(`https://backend.goutsecret.com/api/channels/${id}/`);
-            if (channelRes.ok) {
-                const data = await channelRes.json();
-                streamUrl = data.stream_url;
-            } else {
-                const listRes = await fetch('https://backend.goutsecret.com/api/channels/?page_size=1000');
-                const data = await listRes.json();
-                const channel = data.results.find(c => String(c.id) === String(id));
-                if (channel) streamUrl = channel.stream_url;
+            console.log(`Resolving channel ${id} for device ${device}`);
+            try {
+                const channelRes = await fetch(`https://backend.goutsecret.com/api/channels/${id}/`);
+                if (channelRes.ok) {
+                    const data = await channelRes.json();
+                    streamUrl = data.stream_url;
+                } else {
+                    console.warn(`Backend channel lookup failed: ${channelRes.status}`);
+                    const listRes = await fetch('https://backend.goutsecret.com/api/channels/?page_size=2000');
+                    if (listRes.ok) {
+                        const data = await listRes.json();
+                        const channel = data.results.find(c => String(c.id) === String(id));
+                        if (channel) streamUrl = channel.stream_url;
+                    }
+                }
+            } catch (e) {
+                console.error("Backend discovery error:", e.message);
             }
         }
 
-        if (!streamUrl) return res.status(404).json({ error: "Stream URL not found" });
+        if (!streamUrl) {
+            console.error(`Final check failed: No stream URL for ID ${id}`);
+            return res.status(404).json({ error: "Stream resolution failed. Ensure ID is valid and accessible." });
+        }
 
         // 3. Construct the actual target URL
         // If 'path' is provided, we are proxying a segment or a child playlist
@@ -75,7 +86,10 @@ export default async function handler(req, res) {
                             }
                         } catch(e) {}
                     }
-                    return `/api/m3u8?id=${id}&device=${device}&path=${encodeURIComponent(relativePath)}`;
+                    // Important: We propagate the 'stream' parameter to all child links 
+                    // so the proxy remains "stateless" and doesn't depend on the backend for segments
+                    const streamParam = stream ? `&stream=${encodeURIComponent(stream)}` : "";
+                    return `/api/m3u8?id=${id}&device=${device}${streamParam}&path=${encodeURIComponent(relativePath)}`;
                 }
                 return line;
             });

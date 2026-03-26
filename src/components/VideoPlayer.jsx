@@ -3,7 +3,7 @@ import Hls from 'hls.js';
 import { AlertTriangle } from 'lucide-react';
 import { API_URL } from '../services/api';
 
-const VideoPlayer = ({ url, channelId, deviceId, poster, className, autoPlay = true }) => {
+const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, autoPlay = true }) => {
     const videoRef = useRef(null);
     const hlsRef = useRef(null);
 
@@ -12,8 +12,10 @@ const VideoPlayer = ({ url, channelId, deviceId, poster, className, autoPlay = t
 
     useEffect(() => {
         if (channelId && deviceId) {
-            // Use Secure Vercel Proxy
-            const secureUrl = `/api/m3u8?id=${channelId}&device=${deviceId}`;
+            // Use Secure Vercel Proxy with the stream URL as a fallback 
+            // This bypasses the need for the proxy to authenticate with your backend
+            const encodedStream = streamUrl ? encodeURIComponent(streamUrl) : "";
+            const secureUrl = `/api/m3u8?id=${channelId}&device=${deviceId}&stream=${encodedStream}`;
             setCurrentUrl(secureUrl);
             setIsProxy(true);
         } else if (url) {
@@ -26,7 +28,7 @@ const VideoPlayer = ({ url, channelId, deviceId, poster, className, autoPlay = t
                 setIsProxy(false);
             }
         }
-    }, [url, channelId, deviceId]);
+    }, [url, channelId, deviceId, streamUrl]);
 
     useEffect(() => {
         const video = videoRef.current;
