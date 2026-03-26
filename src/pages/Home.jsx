@@ -390,13 +390,8 @@ const Home = () => {
                             poster={selectedChannel.logo_url}
                             className="w-full h-full"
                         />
-                        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-6 pt-20 pointer-events-none">
-                            <h2 className="text-2xl font-bold text-white mb-1">{selectedChannel.name}</h2>
-                            <div className="flex items-center gap-3 text-xs text-slate-400">
-                                <span className="bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded border border-blue-600/30 uppercase font-bold">{selectedChannel.category}</span>
-                                <span>{selectedChannel.country}</span>
-                                <span>{selectedChannel.language}</span>
-                            </div>
+                        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black to-transparent p-6 pt-24 pointer-events-none">
+                            <h2 className="text-2xl font-bold text-white mb-2">{selectedChannel.name}</h2>
                         </div>
                     </div>
                 )}

@@ -130,17 +130,6 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
         }
     };
 
-    const handleDownload = () => {
-        // Use the proxied URL to bypass 'Access Denied' security blocks.
-        const link = document.createElement('a');
-        link.href = currentUrl || streamUrl || url;
-        link.setAttribute('download', 'video.mp4'); 
-        link.setAttribute('target', '_blank');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
     return (
         <div className={`relative bg-black group/player ${className}`}>
             <video
@@ -155,14 +144,13 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
             {/* Top Controls Overlay */}
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover/player:opacity-100 transition-opacity z-30">
                 {/* Language Switcher */}
-                {audioTracks.length > 1 && (
+                {audioTracks.length > 0 && (
                     <div className="relative">
                         <button 
                             onClick={() => setShowSettings(!showSettings)}
                             className={`p-2 rounded-lg border backdrop-blur-md flex items-center gap-2 text-xs font-bold transition-all ${showSettings ? 'bg-blue-600 border-blue-400 text-white' : 'bg-black/60 hover:bg-black/80 border-white/10 text-slate-300'}`}
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                            <span className="uppercase">{audioTracks[currentAudio]?.name || 'Audio'}</span>
                         </button>
                         
                         {showSettings && (
@@ -191,17 +179,6 @@ const VideoPlayer = ({ url, channelId, deviceId, streamUrl, poster, className, a
                     >
                         <div className={`w-3 h-3 rounded-full ${isRecording ? 'bg-white' : 'bg-red-500'}`} />
                         {isRecording && <span className="text-[10px] text-white font-bold uppercase tracking-tighter">REC</span>}
-                    </button>
-                )}
-
-                {/* Download Button */}
-                {(streamUrl || url) && (
-                    <button 
-                        onClick={handleDownload}
-                        className="bg-black/60 hover:bg-blue-600 p-2 rounded-lg text-white border border-white/10 backdrop-blur-md transition-colors"
-                        title="Download Content"
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
                 )}
             </div>
