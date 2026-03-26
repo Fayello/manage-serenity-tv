@@ -48,22 +48,29 @@ export default async function handler(req, res) {
 
         // 3. Construct the actual target URL
         // If 'path' is provided, we are proxying a segment or a child playlist
-        // We use the 'stream' param (or resolved streamUrl) as the base
         const currentBaseUrlObj = new URL(streamUrl);
         const currentBaseUrl = currentBaseUrlObj.origin + currentBaseUrlObj.pathname.substring(0, currentBaseUrlObj.pathname.lastIndexOf('/') + 1);
         
-        let cleanPath = path ? path.split('?')[0] : null;
-        const targetUrl = cleanPath ? (new URL(cleanPath, currentBaseUrl).href + currentBaseUrlObj.search) : streamUrl;
+        let pathPart = path ? decodeURIComponent(path) : null;
+        let targetUrl = streamUrl;
+        
+        if (pathPart) {
+            // Reconstruct the target URL. If pathPart already has a token, we don't append another one.
+            const resolvedUrl = new URL(pathPart, currentBaseUrl);
+            targetUrl = resolvedUrl.href;
+            if (!resolvedUrl.search && currentBaseUrlObj.search) {
+                targetUrl += currentBaseUrlObj.search;
+            }
+        }
 
         // 4. Fetch the target (Manifest or Segment)
-        // We capture the response and use the FINAL redirected URL for base calculations
-        // We forward the User-Agent and SPOOF the Origin/Referer as many CDN (Pluto, Samsung) enforce it
-        const targetUrlObj = new URL(targetUrl);
-        const headers = {
-            'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Referer': targetUrlObj.origin + '/',
-            'Origin': targetUrlObj.origin
-        };
+        // We forward MOST headers from the client to look exactly like the browser
+        const headers = { ...req.headers };
+        delete headers.host;
+        delete headers.connection;
+        // Spoof Referer to match the target's origin if not present
+        if (!headers.referer) headers.referer = currentBaseUrlObj.origin + '/';
+        headers.origin = currentBaseUrlObj.origin;
 
         const response = await fetch(targetUrl, { headers });
         if (!response.ok) {
@@ -78,33 +85,23 @@ export default async function handler(req, res) {
 
         const finalUrl = response.url; // This tracks redirects!
         const finalUrlObj = new URL(finalUrl);
-        const finalBaseUrl = finalUrlObj.origin + finalUrlObj.pathname.substring(0, finalUrlObj.pathname.lastIndexOf('/') + 1);
-
         const contentType = response.headers.get('content-type');
 
-        // 4. Handle Manifest (.m3u8)
+        // 5. Handle Manifest (.m3u8)
         if (finalUrl.includes('.m3u8') || (contentType && contentType.includes('mpegurl'))) {
             let manifest = await response.text();
             const lines = manifest.split('\n');
             const rewrittenLines = lines.map(line => {
                 const trimmed = line.trim();
                 if (trimmed && !trimmed.startsWith('#')) {
-                    // Extract only the relative file path, ignoring any existing query string in the manifest
-                    let relativePath = trimmed.split('?')[0];
-                    
-                    if (trimmed.startsWith('http')) {
-                        try {
-                            const segmentUrl = new URL(trimmed);
-                            if (segmentUrl.host === finalUrlObj.host) {
-                                relativePath = segmentUrl.pathname.replace(finalUrlObj.pathname.substring(0, finalUrlObj.pathname.lastIndexOf('/') + 1), '');
-                            } else {
-                                return trimmed;
-                            }
-                        } catch(e) {}
+                    // We pass the RAW line (encoded) as the path. 
+                    // To avoid 414, we might strip the token IF it's exactly the same as finalUrl's token.
+                    let relativePath = trimmed;
+                    if (finalUrlObj.search && trimmed.includes(finalUrlObj.search)) {
+                        relativePath = trimmed.replace(finalUrlObj.search, '');
                     }
                     
                     // We propagate the FINAL query string (token) back to the proxy via the 'stream' param
-                    // but we encode the base manifest URL with its token for stateless resolution
                     const streamParam = `&stream=${encodeURIComponent(finalUrl)}`;
                     return `/api/m3u8?id=${id}&device=${device}${streamParam}&path=${encodeURIComponent(relativePath)}`;
                 }
