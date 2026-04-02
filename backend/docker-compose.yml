@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=serenity_db
+      - POSTGRES_USER=serenity_user
+      - POSTGRES_PASSWORD=serenity_password_secure_123
+    restart: always
+
+  web:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgres://serenity_user:serenity_password_secure_123@db:5432/serenity_db
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  postgres_data:

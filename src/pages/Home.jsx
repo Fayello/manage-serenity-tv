@@ -82,7 +82,7 @@ const Home = () => {
     // Core genres for the sidebar - these stay fixed and sorted
     const CORE_GENRES = [
         'French TV', 'English TV', 'Movies', 'Sports', 'Anime', 
-        'News', 'Music', 'Kids', 'World TV', 'Religious', 'Documentary', 'Novelas'
+        'News', 'Music', 'Kids', 'World TV', 'Religious', 'Documentary', 'Novelas', 'Adult (+18)'
     ];
 
     // Refresh Metadata (Categories/Countries/Langs)

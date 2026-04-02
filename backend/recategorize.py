@@ -31,6 +31,12 @@ ENGLISH_KEYWORDS = [
     'hbo', 'showtime', 'espn', 'tnt', 'amc', 'mtv', 'vh1'
 ]
 
+ADULT_KEYWORDS = [
+    'xxx', 'adult', '18+', '+18', 'porn', 'sex', 'hustler', 'playboy', 
+    'brazzers', 'realitykings', 'babes', 'dorcel', 'jacquie', 'libido', 
+    'penthouse', 'pink x', 'sct', 'sexysat', 'vivid', 'passion xxx', 'blue hustler'
+]
+
 def recategorize():
     # 1. Channels (Live TV)
     channels = Channel.objects.all()
@@ -79,10 +85,14 @@ def recategorize():
         elif 'kids' in name_lower or 'kids' in cat_lower: new_cat = "Kids"
         elif any(k in name_lower or k in cat_lower for k in ['movie', 'cinema', 'film']): new_cat = "Movies"
         
-        # 5. CONSOLIDATION
+        # 5. ADULT
+        elif any(k in name_lower or k in cat_lower for k in ADULT_KEYWORDS):
+            new_cat = "Adult (+18)"
+        
+        # 6. CONSOLIDATION
         CORE_GENRES = [
             'French TV', 'English TV', 'Movies', 'Sports', 'Anime', 
-            'News', 'Music', 'Kids', 'World TV', 'Religious', 'Documentary', 'Novelas'
+            'News', 'Music', 'Kids', 'World TV', 'Religious', 'Documentary', 'Novelas', 'Adult (+18)'
         ]
         
         if new_cat not in CORE_GENRES:

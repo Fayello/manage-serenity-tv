@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+"""
+Import channels and Series from all active playlists in the database.
+Implements standard hierarchy: Series > Season > Episode.
+Adds mandatory Language filters and aggressive De-duplication.
+ENHANCED: Grouping all Live TV into Virtual Series by Country/Category.
+"""
+import os
+import sys
+import django
+import requests
+import re
+from collections import Counter
+
+sys.path.insert(0, '/home/fayell/backend-serenity-tv')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
+
+from api.models import Channel, Playlist, Series
+
+def get_country_name(code):
+    countries = {
+        'CM': 'Cameroon', 'FR': 'France', 'US': 'USA', 'GB': 'UK', 'NG': 'Nigeria',
+        'GH': 'Ghana', 'ES': 'Spain', 'MX': 'Mexico', 'CA': 'Canada', 'DE': 'Germany',
+        'IT': 'Italy', 'BR': 'Brazil', 'AR': 'Argentina', 'CI': 'Ivory Coast', 'SN': 'Senegal',
+        'BE': 'Belgium', 'CH': 'Switzerland', 'ZA': 'South Africa', 'KE': 'Kenya', 'IN': 'India'
+    }
+    if not code: return "International"
+    return countries.get(code.upper(), code.upper())
+
+def normalize_category(category_str, default_category):
+    if not category_str or category_str == 'Undefined':
+        return default_category
+    if ';' in category_str:
+        return category_str.split(';')[0].strip()
+    return category_str.strip()
+
+def detect_language(name, country_code, metadata_lang=None):
+    """Detect language from name or metadata"""
+    if metadata_lang:
+        return metadata_lang
+    
+    name_lower = name.lower()
+    if '(en)' in name_lower or '[en]' in name_lower or 'english' in name_lower:
+        return "English"
+    if '(fr)' in name_lower or '[fr]' in name_lower or 'french' in name_lower or 'français' in name_lower:
+        return "French"
+    if '(es)' in name_lower or '[es]' in name_lower or 'spanish' in name_lower or 'español' in name_lower:
+        return "Spanish"
+    
+    # Country fallbacks
+    lang_map = {
+        'FR': 'French', 'CM': 'French', 'CI': 'French', 'SN': 'French',
+        'US': 'English', 'GB': 'English', 'NG': 'English', 'GH': 'English',
+        'ES': 'Spanish', 'MX': 'Spanish'
+    }
+    return lang_map.get(country_code, "International")
+
+def parse_m3u(url, default_category='General', limit=None):
+    content = ""
+    if url == 'https://iptv-org.github.io/iptv/index.m3u' and os.path.exists('mega_playlist.m3u'):
+        print(f"Reading from local file: mega_playlist.m3u")
+        with open('mega_playlist.m3u', 'r') as f:
+            content = f.read()
+    else:
+        print(f"Downloading from {url}...")
+        try:
+            response = requests.get(url, timeout=60)
+            response.raise_for_status()
+            content = response.text
+        except Exception as e:
+            print(f"  Error: {e}")
+            return []
+    
+    lines = content.strip().split('\n')
+    channels = []
+    current_channel = {}
+    
+    for line in lines:
+        line = line.strip()
+        if line.startswith('#EXTINF:'):
+            logo_match = re.search(r'tvg-logo="([^"]*)"', line)
+            logo_url = logo_match.group(1) if logo_match else None
+            
+            group_match = re.search(r'group-title="([^"]*)"', line)
+            category = group_match.group(1) if group_match else default_category
+            category = normalize_category(category, default_category)
+            
+            country_match = re.search(r'tvg-country="([^"]*)"', line)
+            country_code = country_match.group(1) if country_match else ''
+            
+            lang_match = re.search(r'tvg-language="([^"]*)"', line)
+            metadata_lang = lang_match.group(1) if lang_match else None
+            
+            name_match = re.search(r',(.+)$', line)
+            name = name_match.group(1).strip() if name_match else "Unknown"
+            
+            # Extract Language BEFORE cleaning name
+            language = detect_language(name, country_code, metadata_lang)
+            
+            # Fine-grained Categorization
+            name_lower = name.lower()
+            if 'novela' in name_lower or 'telemundo' in name_lower:
+                category = "Novelas"
+            elif 'drama' in name_lower:
+                category = "Drama"
+            elif 'joke' in name_lower or 'comedy' in name_lower or 'humor' in name_lower:
+                category = "Comedy/Jokes"
+            elif 'cinema' in name_lower or 'movie' in name_lower:
+                category = "Movies"
+            
+            # Clean name
+            name = re.sub(r'\s*\([\d]+p\)', '', name)
+            name = re.sub(r'\s*\[.*?\]', '', name)
+            name = name.strip()
+            
+            # Series Parsing (SxxExx)
+            series_name = None
+            season = None
+            episode = None
+            
+            # Enhanced Regex for variety of series formats
+            se_match = re.search(r'(.+?)\s+S(\d+)\s*E(\d+)', name, re.IGNORECASE)
+            if not se_match:
+                se_match = re.search(r'(.+?)\s+(\d+)x(\d+)', name, re.IGNORECASE)
+            
+            if se_match:
+                series_name = se_match.group(1).strip(" -")
+                season = int(se_match.group(2))
+                episode = int(se_match.group(3))
+                # Auto-categorize as Series if it has SxxExx
+                if category == "General" or category == "Cameroon":
+                    category = "Series"
+            
+            # VIRTUAL SERIES grouping for Live TV
+            if not series_name:
+                country_display = get_country_name(country_code)
+                series_name = f"{country_display} - {category}"
+
+            current_channel = {
+                'name': name,
+                'logo_url': logo_url,
+                'category': category,
+                'country_code': country_code,
+                'country_name': get_country_name(country_code),
+                'language': language,
+                'series_name': series_name,
+                'season': season,
+                'episode': episode
+            }
+        elif line and not line.startswith('#') and current_channel:
+            current_channel['stream_url'] = line
+            channels.append(current_channel)
+            current_channel = {}
+            if limit and len(channels) >= limit: break
+    
+    return channels
+
+def import_all():
+    print("Starting Intelligent Import & Hierarchy Refactor...")
+    
+    playlists = list(Playlist.objects.filter(is_active=True))
+    all_raw_channels = []
+    
+    # 1. Collect Cameroon specifically
+    CAMEROON_URL = "https://iptv-org.github.io/iptv/countries/cm.m3u"
+    cm_channels = parse_m3u(CAMEROON_URL, default_category='Cameroon')
+    for c in cm_channels:
+        c['source_playlist'] = None
+        c['country'] = 'Cameroon'
+    all_raw_channels.extend(cm_channels)
+
+    # 2. Collect from other playlists
+    for playlist in playlists:
+        print(f"Processing Playlist: {playlist.name}")
+        channels = parse_m3u(playlist.m3u_url)
+        for c in channels:
+            c['source_playlist'] = playlist
+            c['country'] = c['country_name']
+        all_raw_channels.extend(channels)
+
+    # 3. De-duplication (Strict)
+    seen_urls = set()
+    unique_channels = []
+    for c in all_raw_channels:
+        if c['stream_url'] not in seen_urls:
+            seen_urls.add(c['stream_url'])
+            unique_channels.append(c)
+    
+    print(f"\nCollected {len(all_raw_channels)} total. Unique: {len(unique_channels)}")
+
+    # 4. Clear Old Data (CRITICAL: Do this BEFORE resolving series_map)
+    if len(unique_channels) > 1000:
+        print("Clearing old library for clean hierarchy...")
+        Channel.objects.all().delete()
+        Series.objects.all().delete()
+
+    # 5. Resolve Series Hierarchy
+    print("\nResolving Series Hierarchy...")
+    series_map = {} # title -> Series object
+    
+    for c in unique_channels:
+        s_name = c['series_name']
+        if s_name:
+            if s_name not in series_map:
+                series, created = Series.objects.get_or_create(
+                    title=s_name,
+                    defaults={
+                        'category': c['category'],
+                        'country': c['country'],
+                        'language': c['language'],
+                        'logo_url': c['logo_url']
+                    }
+                )
+                series_map[s_name] = series
+            c['series_obj'] = series_map[s_name]
+
+    # 6. Bulk Import Channels
+    print("\nApplying updates to Database...")
+    imported_count = 0
+    to_create = []
+    
+    for c in unique_channels:
+        to_create.append(Channel(
+            playlist=c['source_playlist'],
+            name=c['name'][:100],
+            stream_url=c['stream_url'],
+            logo_url=c['logo_url'],
+            category=c['category'][:50],
+            country=c['country'],
+            language=c['language'],
+            series=c.get('series_obj'),
+            season=c.get('season'),
+            episode=c.get('episode'),
+            series_name=c.get('series_name'),
+            is_active=True
+        ))
+        
+        if len(to_create) >= 500:
+            Channel.objects.bulk_create(to_create, ignore_conflicts=True)
+            imported_count += len(to_create)
+            to_create = []
+            print(f"  .. imported {imported_count} items")
+
+    if to_create:
+        Channel.objects.bulk_create(to_create, ignore_conflicts=True)
+        imported_count += len(to_create)
+
+    print(f"\n🚀 Import Complete!")
+    print(f"Total Channels: {Channel.objects.count()}")
+    print(f"Total Series Groupings: {Series.objects.count()}")
+
+if __name__ == '__main__':
+    import_all()
