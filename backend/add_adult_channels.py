@@ -35,6 +35,16 @@ adult_channels = [
     {"name": "SCT", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111843.m3u8", "category": "Adult (+18)", "country": "Global", "language": "International"},
     {"name": "SEXYSAT", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111844.m3u8", "category": "Adult (+18)", "country": "Global", "language": "International"},
     {"name": "VIVID TV", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111845.m3u8", "category": "Adult (+18)", "country": "Global", "language": "International"},
+    
+    # Mexican Adult
+    {"name": "PLAYBOY TV MEXICO", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111826.m3u8", "category": "Adult (+18)", "country": "Mexico", "language": "Spanish"},
+    {"name": "VENUS MX", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111827.m3u8", "category": "Adult (+18)", "country": "Mexico", "language": "Spanish"},
+    {"name": "SEXTREME", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111828.m3u8", "category": "Adult (+18)", "country": "Mexico", "language": "Spanish"},
+
+    # Asian Adult
+    {"name": "TOKYO ADULT TV", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111846.m3u8", "category": "Adult (+18)", "country": "Japan", "language": "Japanese"},
+    {"name": "THAILAND XXX", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111847.m3u8", "category": "Adult (+18)", "country": "Thailand", "language": "Thai"},
+    {"name": "KOREA XXX", "url": "http://iptv-line.com:7899/live/thomasdj19821/vODCWh1y/111848.m3u8", "category": "Adult (+18)", "country": "Korea", "language": "Korean"},
 ]
 
 for c_data in adult_channels:
